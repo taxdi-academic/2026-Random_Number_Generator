@@ -1,78 +1,85 @@
 """
-Construction XOR NRBG (Non-Random Bit Generator)
-
-Générateur hybride combinant plusieurs générateurs (ou sources)
-de bits via une opération XOR bit à bit.
-
-Cette construction vise à améliorer la robustesse : si au moins
-une des sources produit de l'aléa de qualité, le résultat
-combiné hérite de cette qualité.
-
-    output = source_1 XOR source_2 XOR ... XOR source_n
+Construction XOR NRBG (Non-deterministic Random Bit Generator)
+Combine plusieurs sources d'entropie via XOR pour robustesse
+https://fr.wikipedia.org/wiki/Fonction_OU_exclusif
 """
 
-from ..PRNG_non_cryptographics.lcg import lcg_generate_bytes
-from ..PRNG_non_cryptographics.mersenne_twister import mt_generate_bytes
-from ..CSPRNG.os_random import os_generate_bytes
-
-
-def xor_bytes_list(byte_arrays):
+def xor_combine_bits(sources):
     """
-    XOR bit à bit d'une liste de séquences d'octets.
-
-    Args:
-        byte_arrays : liste de bytes de même longueur
-
-    Returns:
-        bytes résultat du XOR
+    Combine sources de bits via XOR bit-a-bit
+    Principe: Si >=1 source aleatoire et independante,
+        sortie reste aleatoire (robustesse defaillance)
+    Parametres:
+        sources: [[1,0,1], [0,1,1], [1,1,0]]
     """
-    n = len(byte_arrays[0])
+    if not sources:
+        return []
+
+    n = len(sources[0])
+    result = []
+    for i in range(n):
+        bit = 0
+        for source in sources:
+            bit ^= source[i]
+        result.append(bit)
+    return result
+
+def xor_combine_bytes(sources):
+    """
+    Combine sources d'octets via XOR octet-par-octet
+    Parametres:
+        sources: liste de bytes (meme longueur)
+    """
+    if not sources:
+        return b''
+
+    n = len(sources[0])
     result = bytearray(n)
-    for ba in byte_arrays:
-        for i in range(n):
-            result[i] ^= ba[i]
+    for i in range(n):
+        xor_val = 0
+        for source in sources:
+            xor_val ^= source[i]
+        result[i] = xor_val
     return bytes(result)
 
-
-def xor_nrbg_generate_bytes(n, seed=42):
+def xor_nrbg(generators, seeds, n):
     """
-    Génère n octets en combinant LCG, MT et os.urandom par XOR.
-
-    Args:
-        n    : nombre d'octets à générer
-        seed : graine pour les générateurs déterministes
-
-    Returns:
-        bytes de longueur n
+    Generateur hybride combinant plusieurs PRNGs via XOR
+    Avantage: Si un generateur compromis, sortie reste imprevisible
+        si autres generateurs sains
+    Parametres:
+        generators: [gen1, gen2, ...] avec signature gen(seed, n)
+        seeds: [seed1, seed2, ...]
+        n: nombre de valeurs
     """
-    lcg_data, _ = lcg_generate_bytes(n, seed=seed)
-    mt_data, _ = mt_generate_bytes(n, seed=seed)
-    os_data = os_generate_bytes(n)
+    if len(generators) != len(seeds):
+        raise ValueError("Nombre generateurs != nombre graines")
 
-    return xor_bytes_list([lcg_data, mt_data, os_data])
+    outputs = [gen(seed, n) for gen, seed in zip(generators, seeds)]
 
-
-def xor_nrbg_generate_custom(n, generator_outputs):
-    """
-    Combine des sorties de générateurs arbitraires par XOR.
-
-    Args:
-        n                  : nombre d'octets attendus
-        generator_outputs  : liste de bytes (chacun de longueur >= n)
-
-    Returns:
-        bytes de longueur n
-    """
-    return xor_bytes_list([o[:n] for o in generator_outputs])
+    result = []
+    for i in range(n):
+        xor_val = 0
+        for output in outputs:
+            xor_val ^= output[i]
+        result.append(xor_val)
+    return result
 
 
+# Tests
 if __name__ == "__main__":
-    print("XOR NRBG (LCG + MT + os.urandom) - 16 octets :")
-    data = xor_nrbg_generate_bytes(16, seed=42)
-    print(f"  {data.hex()}")
+    print("XOR bits")
+    src_bits = [[1, 0, 1, 1], [0, 1, 1, 0], [1, 1, 0, 1]]
+    print(f"Sources: {src_bits}")
+    print(f"XOR: {xor_combine_bits(src_bits)}")
 
-    print("\n10 séquences de 4 octets :")
-    for i in range(10):
-        chunk = xor_nrbg_generate_bytes(4, seed=42 + i)
-        val = int.from_bytes(chunk, "big")
-        print(f"  {val}")
+    print("\nXOR bytes")
+    src_bytes = [b'\xAA\xBB', b'\x55\x44', b'\xFF\x00']
+    print(f"Sources: {[s.hex() for s in src_bytes]}")
+    print(f"XOR: {xor_combine_bytes(src_bytes).hex()}")
+
+    print("\nXOR generateurs")
+    gen1 = lambda seed, n: [(seed + i) % 256 for i in range(n)]
+    gen2 = lambda seed, n: [(seed * 2 + i) % 256 for i in range(n)]
+    result = xor_nrbg([gen1, gen2], [42, 17], 5)
+    print(f"XOR(gen1, gen2): {result}")
