@@ -124,7 +124,7 @@ python Tests/chi_square.py
 
 ### Running Pedagogical Attacks
 ```bash
-# ⚠️ For educational purposes only
+# For educational purposes only
 python Attacks/lcg_seed_recovery.py
 python Attacks/mt_state_recovery.py
 ```

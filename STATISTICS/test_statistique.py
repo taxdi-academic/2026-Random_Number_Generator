@@ -1,354 +1,392 @@
 """
 Tests statistiques pour evaluer la qualite des generateurs de nombres aleatoires.
 
-Tests implementes :
+4 tests implementes :
     1. Entropie de Shannon par octet
-    2. Test du chi-carre (X^2) pour l'uniformite des octets
+    2. Test du chi-carre (X²) pour l'uniformite des octets
     3. Autocorrelation (lags 1, 8, 16, 32)
     4. Test de Kolmogorov-Smirnov (KS)
+
+Aucune dependance externe (pas de scipy, numpy).
 """
 
 import math
 from collections import Counter
 
 
-# =============================================================================
+# ─────────────────────────────────────────────────────────────────────────────
 # 1. Entropie de Shannon
-# https://fr.wikipedia.org/wiki/Entropie_de_Shannon
-# =============================================================================
+#    https://fr.wikipedia.org/wiki/Entropie_de_Shannon
+#
+#    H = - somme( p_i * log2(p_i) )
+#
+#    Pour des octets (256 symboles possibles) :
+#        H_max = log2(256) = 8 bits/octet
+#        H = 8   → parfaitement aleatoire
+#        H < 8   → presence de motifs, predictibilite
+# ─────────────────────────────────────────────────────────────────────────────
 
 def shannon_entropy(data):
     """
-    Calcule l'entropie de Shannon par octet
-
-    Interpretation avec H l'entropie :
-        - si H = 8 bits : parfaite entropie (totalement aleatoire)
-        - si H < 8 bits : moins bon (presence de patterns, ou predictibilite)
+    Calcule l'entropie de Shannon en bits par octet.
 
     Parametres:
-        data: octets ou bien liste d'entiers [0-255]
+        data : bytes, bytearray ou liste d'entiers [0-255]
 
     Retourne:
-        Entropie en bits par octet
+        float : entropie en bits/octet (entre 0 et 8)
     """
     if isinstance(data, (bytes, bytearray)):
         data = list(data)
 
-    if not data:
+    n = len(data)
+    if n == 0:
         return 0.0
 
-    # Compter frequences de chaque octet
     freq = Counter(data)
-    n = len(data)
-
-    # Calculer entropie
     entropy = 0.0
     for count in freq.values():
-        p = count / n  # Proba uniforme
+        p = count / n
         if p > 0:
             entropy -= p * math.log2(p)
 
     return entropy
 
 
-def shannon_entropy_res(data):
+def test_shannon(data):
     """
-    Rapport detaille d'entropie
+    Test d'entropie de Shannon.
+
+    PASS si H > 7.9 bits/octet (seuil classique pour donnees aleatoires).
 
     Retourne:
-        dico avec entropie, max theorique, pourcentage
+        dict avec 'entropy', 'max_entropy', 'percentage', 'status'
     """
-    entropy = shannon_entropy(data)
-    max_entropy = 8.0  # 8 bits
+    H = shannon_entropy(data)
+    H_max = 8.0
 
     return {
-        'entropy': entropy,
-        'max_entropy': max_entropy,
-        'percentage': (entropy / max_entropy) * 100,
-        'status': 'PASS' if entropy > 7.9 else 'FAIL'
+        "entropy": H,
+        "max_entropy": H_max,
+        "percentage": (H / H_max) * 100,
+        "status": "PASS" if H > 7.9 else "FAIL",
     }
 
 
-# =============================================================================
-# 2. Test du Chi-Carre (X^2)
-# https://fr.wikipedia.org/wiki/Test_du_%CF%87%C2%B2
-# =============================================================================
+# ─────────────────────────────────────────────────────────────────────────────
+# 2. Test du chi-carre (X²)
+#    https://fr.wikipedia.org/wiki/Test_du_χ²
+#
+#    On teste H0 : "les 256 valeurs d'octets sont equiprobables"
+#
+#    X² = somme( (O_i - E_i)² / E_i )
+#
+#    avec O_i = occurrences observees, E_i = n / 256 (attendu uniforme)
+#    Degres de liberte : df = 256 - 1 = 255
+#    Valeur critique a alpha=0.05 : X²_crit ≈ 293.25
+#
+#    Si X² < X²_crit → on ne rejette pas H0 (distribution uniforme plausible)
+#    Si X² > X²_crit → on rejette H0 (biais detecte)
+# ─────────────────────────────────────────────────────────────────────────────
 
-def chi_squared_test(data, p=0.05):
+def chi_squared(data):
     """
-    Test pour uniformite de distribution des octets
-
-    Hypothese H_0: les octets sont uniformement distribues
+    Calcule la statistique X² pour l'uniformite des octets.
 
     Parametres:
-        data: octets ou liste d'entiers [0-255]
-        p: seuil de signification (0.05 = 5%)
+        data : bytes, bytearray ou liste d'entiers [0-255]
 
     Retourne:
-        dico
+        float : valeur de X²
     """
     if isinstance(data, (bytes, bytearray)):
         data = list(data)
 
-    if not data:
-        return None
-
-    # Compter occurrences
-    freq = Counter(data)
     n = len(data)
+    if n == 0:
+        return 0.0
 
-    # Frequence attendue pour uniformite
+    freq = Counter(data)
     expected = n / 256
 
-    # Calculer X^2
     chi2 = 0.0
     for i in range(256):
         observed = freq.get(i, 0)
         chi2 += ((observed - expected) ** 2) / expected
 
-    # Degres de liberte: 256 - 1 = 255
+    return chi2
+
+
+def test_chi_squared(data, alpha=0.05):
+    """
+    Test du chi-carre pour uniformite des octets.
+
+    Parametres:
+        data  : bytes, bytearray ou liste d'entiers [0-255]
+        alpha : seuil de signification (defaut 0.05)
+
+    Retourne:
+        dict avec 'chi2', 'df', 'critical_value', 'p_approx', 'status'
+    """
+    chi2 = chi_squared(data)
     df = 255
-
-    # Pour p=0.05: X^2_critique ~ 293.25
-    critical_value = 293.25
-
-    p_value = "< 0.05" if chi2 > critical_value else "> 0.05"
+    critical_value = 293.25  # X²_crit pour df=255, alpha=0.05
 
     return {
-        'chi2': chi2,
-        'degrees_freedom': df,
-        'critical_value': critical_value,
-        'p_value': p_value,
-        'status': 'PASS' if chi2 < critical_value else 'FAIL'
+        "chi2": chi2,
+        "df": df,
+        "critical_value": critical_value,
+        "p_approx": "< 0.05" if chi2 > critical_value else "> 0.05",
+        "status": "PASS" if chi2 < critical_value else "FAIL",
     }
 
 
-# =============================================================================
+# ─────────────────────────────────────────────────────────────────────────────
 # 3. Autocorrelation
-# https://fr.wikipedia.org/wiki/Autocorr%C3%A9lation
-# =============================================================================
+#    https://fr.wikipedia.org/wiki/Autocorrélation
+#
+#    r(k) = Cov(X_i, X_{i+k}) / Var(X)
+#
+#    Pour un generateur ideal : r(k) ≈ 0 pour tout k > 0
+#    Seuil de significativite a 95% : |r(k)| < 2 / sqrt(n)
+#    Seuil pratique utilise ici : |r(k)| < 0.05
+# ─────────────────────────────────────────────────────────────────────────────
 
 def autocorrelation(data, lag=1):
     """
-    Calcule le coefficient d'autocorrelation pour un decalage donne
+    Calcule le coefficient d'autocorrelation pour un decalage k.
 
-    Interpretation:
-        r ~ 0 : pas de correlation (donc c'est bon)
-        |r| > 0.1 : correlation detectable (donc suspect)
+    r(k) = [ sum (X_i - mu)(X_{i+k} - mu) ] / [ sum (X_i - mu)² ]
 
     Parametres:
-        data: liste de valeurs numeriques
-        lag: decalage (1 = valeurs consecutives)
+        data : liste de valeurs numeriques
+        lag  : decalage k (1 = valeurs consecutives)
 
     Retourne:
-        Coefficient d'autocorrelation [-1, 1]
+        float : coefficient r(k) dans [-1, 1]
     """
     if isinstance(data, (bytes, bytearray)):
         data = list(data)
 
-    if len(data) < lag + 1:
+    n = len(data)
+    if n < lag + 1:
         return 0.0
 
-    n = len(data) - lag
+    mu = sum(data) / n
 
-    # Moyenne
-    moy = sum(data) / len(data)
-
-    # Variance
-    variance = sum((x - moy)**2 for x in data)
+    variance = sum((x - mu) ** 2 for x in data)
     if variance == 0:
         return 0.0
 
-    # Covariance avec decalage
-    covariance = sum((data[i] - moy) * (data[i + lag] - moy) for i in range(n))
+    covariance = sum((data[i] - mu) * (data[i + lag] - mu) for i in range(n - lag))
 
-    # Coefficient
-    r = covariance / variance
-
-    return r
+    return covariance / variance
 
 
-def autocorrelation_test(data, lags=[1, 8, 16, 32]):
+def test_autocorrelation(data, lags=(1, 8, 16, 32)):
     """
-    Test d'autocorrelation pour plusieurs decalages
+    Test d'autocorrelation pour plusieurs decalages.
+
+    PASS si |r(k)| < 0.05 pour chaque lag.
 
     Parametres:
-        data: octets ou liste d'entiers
-        lags: liste de decalages a tester
+        data : bytes, bytearray ou liste d'entiers
+        lags : tuple de decalages a tester
 
     Retourne:
-        dict avec coefficients pour chaque lag
+        dict par lag, chacun avec 'coefficient' et 'status'
     """
     if isinstance(data, (bytes, bytearray)):
         data = list(data)
 
+    seuil = 0.05
     results = {}
-    threshold = 0.05  # Seuil tolerance
 
     for lag in lags:
         r = autocorrelation(data, lag)
-        results[f'lag_{lag}'] = {
-            'coefficient': r,
-            'status': 'PASS' if abs(r) < threshold else 'FAIL'
+        results[f"lag_{lag}"] = {
+            "coefficient": r,
+            "status": "PASS" if abs(r) < seuil else "FAIL",
         }
 
     return results
 
 
-# =============================================================================
-# 4. Test de Kolmogorov-Smirnov
-# http://fr.wikipedia.org/wiki/Test_de_Kolmogorov-Smirnov
-# =============================================================================
+# ─────────────────────────────────────────────────────────────────────────────
+# 4. Test de Kolmogorov-Smirnov (KS)
+#    https://fr.wikipedia.org/wiki/Test_de_Kolmogorov-Smirnov
+#
+#    Compare la CDF empirique F_n(x) a la CDF theorique F(x) = x (uniforme)
+#
+#    D_n = max | F_n(x_i) - F(x_i) |
+#
+#    avec F_n(x_i) = i/n  et  F(x_i) = x_i  (apres normalisation dans [0,1])
+#
+#    Valeur critique pour alpha=0.05 :  D_crit = 1.36 / sqrt(n)
+#    (approximation valide pour n > 35)
+#
+#    Si D_n < D_crit → PASS (distribution uniforme plausible)
+#    Si D_n > D_crit → FAIL (ecart significatif)
+# ─────────────────────────────────────────────────────────────────────────────
 
-def kolmogorov_smirnov_test(data):
+def kolmogorov_smirnov(data):
     """
-    Test KS pour comparer distribution empirique vs uniforme [0, 255]
+    Calcule la statistique D de Kolmogorov-Smirnov.
+
+    Compare la distribution empirique des octets a la loi uniforme discrete
+    sur {0, 1, ..., 255}.
+
+    CDF theorique discrete : F(k) = (k + 1) / 256
+    (et non F(x) = x qui suppose une uniforme continue)
 
     Parametres:
-        data: octets ou liste d'entiers [0-255]
+        data : bytes, bytearray ou liste d'entiers [0-255]
 
     Retourne:
-        dico avec statistique, verdict
+        float : statistique D (distance maximale)
     """
     if isinstance(data, (bytes, bytearray)):
         data = list(data)
 
-    if not data:
-        return None
+    n = len(data)
+    if n == 0:
+        return 0.0
 
-    # On normalise dans [0, 1]
-    normalized = sorted([x / 255.0 for x in data])
-    n = len(normalized)
+    sorted_data = sorted(data)
 
-    # Calculer D (distance maximale)
-    max_diff = 0.0
+    D = 0.0
+    for i, value in enumerate(sorted_data):
+        F_n = (i + 1) / n            # CDF empirique
+        F = (value + 1) / 256        # CDF theorique uniforme discrete
+        D = max(D, abs(F_n - F))
 
-    for i, value in enumerate(normalized):
-        # Empirique au point i
-        empi = (i + 1) / n
-
-        # Theorique uniforme [0,1]
-        theo = value
-
-        # Distance
-        diff = abs(empi - theo)
-        max_diff = max(max_diff, diff)
-
-    # Valeur critique (approximation pour n > 35)
-    # D_critique = 1.36 / sqrt(n) pour alpha = 0.05
-    critical_value = 1.36 / math.sqrt(n)
-
-    return {
-        'D': max_diff,
-        'critical_value': critical_value,
-        'n': n,
-        'status': 'PASS' if max_diff < critical_value else 'FAIL'
-    }
+    return D
 
 
-# =============================================================================
-# Rapport complet
-# =============================================================================
-
-def full_statistical_res(data):
+def test_kolmogorov_smirnov(data):
     """
-    Tests
+    Test de Kolmogorov-Smirnov pour uniformite des octets.
 
     Parametres:
-        data: octets ou liste d'entiers
+        data : bytes, bytearray ou liste d'entiers [0-255]
 
     Retourne:
-        dico avec resultats de tous les tests
+        dict avec 'D', 'critical_value', 'n', 'status'
     """
     if isinstance(data, (bytes, bytearray)):
-        data_list = list(data)
-    else:
-        data_list = data
+        data = list(data)
 
-    res = {
-        'data_size': len(data_list),
-        'shannon_entropy': shannon_entropy_res(data_list),
-        'chi_squared': chi_squared_test(data_list),
-        'autocorrelation': autocorrelation_test(data_list),
-        'kolmogorov_smirnov': kolmogorov_smirnov_test(data_list)
+    n = len(data)
+    if n == 0:
+        return {"D": 0.0, "critical_value": 0.0, "n": 0, "status": "FAIL"}
+
+    D = kolmogorov_smirnov(data)
+    D_crit = 1.36 / math.sqrt(n)
+
+    return {
+        "D": D,
+        "critical_value": D_crit,
+        "n": n,
+        "status": "PASS" if D < D_crit else "FAIL",
     }
 
-    tests_passed = sum([
-        res['shannon_entropy']['status'] == 'PASS',
-        res['chi_squared']['status'] == 'PASS',
-        all(v['status'] == 'PASS' for v in res['autocorrelation'].values()),
-        res['kolmogorov_smirnov']['status'] == 'PASS'
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Rapport complet
+# ─────────────────────────────────────────────────────────────────────────────
+
+def run_all_tests(data):
+    """
+    Execute les 4 tests sur un jeu de donnees.
+
+    Parametres:
+        data : bytes, bytearray ou liste d'entiers [0-255]
+
+    Retourne:
+        dict avec les resultats de chaque test + verdict global
+    """
+    if isinstance(data, (bytes, bytearray)):
+        data = list(data)
+
+    res = {
+        "n": len(data),
+        "shannon": test_shannon(data),
+        "chi2": test_chi_squared(data),
+        "autocorrelation": test_autocorrelation(data),
+        "ks": test_kolmogorov_smirnov(data),
+    }
+
+    ac_pass = all(v["status"] == "PASS" for v in res["autocorrelation"].values())
+
+    passed = sum([
+        res["shannon"]["status"] == "PASS",
+        res["chi2"]["status"] == "PASS",
+        ac_pass,
+        res["ks"]["status"] == "PASS",
     ])
 
-    res['global_status'] = {
-        'passed': tests_passed,
-        'total': 4,
-        'verdict': 'PASS' if tests_passed >= 3 else 'FAIL'
+    res["verdict"] = {
+        "passed": passed,
+        "total": 4,
+        "status": "PASS" if passed >= 3 else "FAIL",
     }
 
     return res
 
 
-def print_res(res):
-    print("RAPPORT DE TESTS STATISTIQUES")
+def print_report(res):
+    """Affiche un rapport lisible des resultats."""
 
-    print(f"\nTaille echantillon: {res['data_size']} octets")
+    print(f"Taille echantillon : {res['n']} octets\n")
 
-    print("\n1. ENTROPIE DE SHANNON \n")
-    ent = res['shannon_entropy']
-    print(f"   Entropie: {ent['entropy']:.4f} bits/octet")
-    print(f"   Maximum:  {ent['max_entropy']:.4f} bits/octet")
-    print(f"   Pourcentage: {ent['percentage']:.2f}%")
-    print(f"   Verdict: {ent['status']}")
+    # Shannon
+    s = res["shannon"]
+    print("1. ENTROPIE DE SHANNON")
+    print(f"   H = {s['entropy']:.4f} bits/octet  (max = {s['max_entropy']:.1f})")
+    print(f"   {s['percentage']:.2f}% du maximum")
+    print(f"   → {s['status']}\n")
 
-    print("\n2. TEST CHI-CARRE (uniformite) \n")
-    chi = res['chi_squared']
-    print(f"   X^2 = {chi['chi2']:.2f}")
-    print(f"   Degres liberte: {chi['degrees_freedom']}")
-    print(f"   Valeur critique (a=0.05): {chi['critical_value']:.2f}")
-    print(f"   P-value: {chi['p_value']}")
-    print(f"   Verdict: {chi['status']}")
+    # Chi2
+    c = res["chi2"]
+    print("2. TEST DU CHI-CARRE")
+    print(f"   X² = {c['chi2']:.2f}  (critique = {c['critical_value']:.2f}, df = {c['df']})")
+    print(f"   p {c['p_approx']}")
+    print(f"   → {c['status']}\n")
 
-    print("\n3. AUTOCORRELATION \n")
-    for lag_name, result in res['autocorrelation'].items():
-        lag_num = lag_name.split('_')[1]
-        print(f"   Lag {lag_num}: r = {result['coefficient']:+.6f} [{result['status']}]")
+    # Autocorrelation
+    print("3. AUTOCORRELATION")
+    for name, r in res["autocorrelation"].items():
+        lag_num = name.split("_")[1]
+        print(f"   lag {lag_num:>2} : r = {r['coefficient']:+.6f}  [{r['status']}]")
+    print()
 
-    print("\n4. TEST KOLMOGOROV-SMIRNOV \n")
-    ks = res['kolmogorov_smirnov']
-    print(f"   D = {ks['D']:.6f}")
-    print(f"   Valeur critique: {ks['critical_value']:.6f}")
-    print(f"   Verdict: {ks['status']}")
+    # KS
+    k = res["ks"]
+    print("4. TEST DE KOLMOGOROV-SMIRNOV")
+    print(f"   D = {k['D']:.6f}  (critique = {k['critical_value']:.6f})")
+    print(f"   → {k['status']}\n")
 
-    print("*"*50 + "\n")
-    print("Verdict Final \n")
-    global_st = res['global_status']
-    print(f"   Tests reussis: {global_st['passed']}/{global_st['total']}")
-    print(f"   STATUT: {global_st['verdict']}")
-    print("*"*50 + "\n")
-
+    # Verdict
+    v = res["verdict"]
+    print(f"VERDICT : {v['passed']}/{v['total']} tests reussis → {v['status']}")
+    print("-" * 50)
 
 
-# TESTS
+# ─────────────────────────────────────────────────────────────────────────────
+# Main
+# ─────────────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    print("Tests unitaires des fonctions statistiques\n")
-
-    # Test 1: Donnees aleatoires
     import os
-    print("Test 1: os.urandom (reference)")
-    random_data = os.urandom(10000)
-    res1 = full_statistical_res(random_data)
-    print_res(res1)
 
-    # Test 2: Donnees biaisees (repetees)
-    print("\nTest 2: Donnees biaisees (motif repete)")
-    biased_data = bytes([0, 1, 2] * 1000)
-    res2 = full_statistical_res(biased_data)
-    print_res(res2)
+    print("=== Test 1 : os.urandom (reference) ===\n")
+    res1 = run_all_tests(os.urandom(10_000))
+    print_report(res1)
 
-    # Test 3: Donnees constantes (pire cas)
-    print("\nTest 3: Donnees constantes (0x42 repete)")
-    constant_data = bytes([0x42] * 1000)
-    res3 = full_statistical_res(constant_data)
-    print_res(res3)
+    print("\n=== Test 2 : donnees biaisees (motif 0,1,2 repete) ===\n")
+    res2 = run_all_tests(bytes([0, 1, 2] * 1000))
+    print_report(res2)
+
+    print("\n=== Test 3 : donnees constantes (0x42) ===\n")
+    res3 = run_all_tests(bytes([0x42] * 1000))
+    print_report(res3)
