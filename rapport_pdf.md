@@ -1,13 +1,100 @@
-# Générateurs de Nombres Pseudo-Aléatoires : Implémentation, Tests et Attaques
+---
+geometry: margin=2.5cm
+fontsize: 11pt
+documentclass: article
+lang: fr
+header-includes:
+  - \usepackage{fvextra}
+  - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\},fontsize=\small}
+  - \usepackage{fancyhdr}
+  - \usepackage{graphicx}
+  - \usepackage{float}
+  - \usepackage{booktabs}
+  - \usepackage{longtable}
+  - \usepackage{array}
+  - \usepackage{xcolor}
+  - \usepackage{listings}
+  - \usepackage{tcolorbox}
+  - \pagestyle{fancy}
+  - \fancyhf{}
+  - \fancyhead[L]{MAHE Eliot, GALLIC Maxime, OZ... Denis -- ICE 3A}
+  - \fancyhead[R]{\thepage}
+  - \renewcommand{\headrulewidth}{0.4pt}
+  - \fancypagestyle{plain}{\pagestyle{fancy}}
+  - \lstset{basicstyle=\ttfamily\small,breaklines=true,frame=single,backgroundcolor=\color{gray!10}}
+  - \renewcommand{\arraystretch}{1.3}
+---
+
+\begin{titlepage}
+\begin{flushright}
+\includegraphics[width=4cm]{screens/logo_ensibs.png}
+\end{flushright}
+
+\begin{center}
+\vspace*{2cm}
+
+{\Huge\bfseries Générateurs de Nombres Pseudo-Aléatoires}
+
+\vspace{0.5cm}
+
+{\Large\bfseries Implémentation, Tests et Attaques}
+
+\vspace{0.3cm}
+
+{\large Génération de Nombres Aléatoires}
+
+\vspace{2cm}
+
+{\Large MAHE Eliot GALLIC Maxime OZ... Denis}
+
+\vspace{1cm}
+
+{\large 18 février 2026}
+
+\vfill
+\end{center}
+\end{titlepage}
+
+\newpage
+\thispagestyle{empty}
+
+# Informations administratives
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Élément} & \textbf{Détail} \\
+\hline
+Auteur & MAHE Eliot \\
+\hline
+Date & 18 février 2026 \\
+\hline
+Établissement & ENSIBS \\
+\hline
+Promotion & ICE 3A promotion 2028 \\
+\hline
+UE & Génération de Nombres Aléatoires \\
+\hline
+\end{tabular}
+\end{center}
+
+\newpage
+
+# Sommaire
+
+\tableofcontents
+
+\newpage
 
 ## Introduction
 
 Ce document présente l'étude de sept générateurs de nombres pseudo-aléatoires (PRNG), quatre tests statistiques permettant d'évaluer leur qualité, et deux attaques démontrant les faiblesses cryptographiques de certains d'entre eux. L'objectif est de comprendre les différences fondamentales entre les générateurs à usage général et les générateurs cryptographiquement sûrs (CSPRNG), et de montrer pourquoi l'utilisation d'un PRNG non cryptographique dans un contexte de sécurité constitue une vulnérabilité grave.
 
 Les générateurs étudiés sont regroupés en quatre catégories :
+
 - **PRNG non cryptographiques** : LCG, Mersenne Twister
 - **Distribution gaussienne** : transformée de Box-Muller
-- **CSPRNG** : Blum-Blum-Shub, Hash_DRBG, os.urandom
+- **CSPRNG** : Blum-Blum-Shub, Hash\_DRBG, os.urandom
 - **Hybride non-déterministe** : XOR NRBG
 
 ---
@@ -25,6 +112,7 @@ X_{n+1} = (a * X_n + c) mod m
 ```
 
 où :
+
 - `X_0` est la **graine** (seed), valeur initiale secrète
 - `a` est le **multiplicateur**
 - `c` est l'**incrément**
@@ -50,9 +138,9 @@ La fonction prend une graine, les paramètres `(a, c, m)` et le nombre de valeur
 
 | Nom | a | c | m | Source |
 |-----|---|---|---|--------|
-| glibc | 1 103 515 245 | 12 345 | 2³¹ | Bibliothèque standard C |
-| RANDU | 65 539 | 0 | 2³¹ | IBM (1960s, mauvais) |
-| MMIX (Knuth) | 6 364 136 223 846 793 005 | 1 442 695 040 888 963 407 | 2⁶⁴ | The Art of Computer Programming |
+| glibc | 1 103 515 245 | 12 345 | 2^31 | Bibliothèque standard C |
+| RANDU | 65 539 | 0 | 2^31 | IBM (1960s, mauvais) |
+| MMIX (Knuth) | 6 364 136 223 846 793 005 | 1 442 695 040 888 963 407 | 2^64 | The Art of Computer Programming |
 
 #### Propriétés
 
@@ -78,10 +166,11 @@ L'algorithme se décompose en trois phases :
 #### Implémentation
 
 **Constantes MT19937** :
+
 ```
 W=32, N=624, M=397, R=31
 A=0x9908B0DF, F=1812433253
-U=11, D=0xFFFFFFFF, S=7,  B=0x9D2C5680
+U=11, D=0xFFFFFFFF, S=7, B=0x9D2C5680
 T=15, C=0xEFC60000, L=18
 ```
 
@@ -155,13 +244,13 @@ L'état est parcouru séquentiellement. Toutes les 624 extractions, un twist ré
 
 #### Principe
 
-La transformée de Box-Muller convertit deux valeurs uniformes indépendantes `U1, U2 ∈ (0, 1)` en deux valeurs gaussiennes indépendantes suivant `N(0, 1)`. Ce n'est pas un générateur autonome : il nécessite un PRNG uniforme sous-jacent.
+La transformée de Box-Muller convertit deux valeurs uniformes indépendantes `U1, U2` dans `(0, 1)` en deux valeurs gaussiennes indépendantes suivant `N(0, 1)`. Ce n'est pas un générateur autonome : il nécessite un PRNG uniforme sous-jacent.
 
 #### Formules
 
 ```
-Z0 = sqrt(-2 * ln(U1)) * cos(2π * U2)
-Z1 = sqrt(-2 * ln(U1)) * sin(2π * U2)
+Z0 = sqrt(-2 * ln(U1)) * cos(2pi * U2)
+Z1 = sqrt(-2 * ln(U1)) * sin(2pi * U2)
 ```
 
 #### Implémentation
@@ -204,12 +293,12 @@ def box_muller_series(uniform_rng, seed, n):
 
 #### Principe
 
-BBS est un générateur cryptographiquement sûr reposant sur la difficulté de la factorisation d'entiers. Il utilise le module `M = p × q`, où `p` et `q` sont deux grands nombres premiers de Blum satisfaisant `p ≡ q ≡ 3 (mod 4)`.
+BBS est un générateur cryptographiquement sûr reposant sur la difficulté de la factorisation d'entiers. Il utilise le module `M = p x q`, où `p` et `q` sont deux grands nombres premiers de Blum satisfaisant `p = q = 3 (mod 4)`.
 
 #### Formule
 
 ```
-x_{n+1} = (x_n)² mod M
+x_{n+1} = (x_n)^2 mod M
 ```
 
 Seul le **bit de poids faible** de `x_n` est extrait à chaque itération.
@@ -238,13 +327,14 @@ Les paramètres de test utilisés (`p = 499`, `q = 547`) sont des petits premier
 
 ---
 
-### 1.5 Hash_DRBG (NIST SP 800-90A)
+### 1.5 Hash\_DRBG (NIST SP 800-90A)
 
 #### Principe
 
-Le Hash_DRBG (Hash-based Deterministic Random Bit Generator) est un CSPRNG standardisé par le NIST (SP 800-90A). Il est basé sur SHA-256 et maintient un état interne composé de deux vecteurs `V` et `C` de 55 octets (440 bits = `seedlen` pour SHA-256).
+Le Hash\_DRBG (Hash-based Deterministic Random Bit Generator) est un CSPRNG standardisé par le NIST (SP 800-90A). Il est basé sur SHA-256 et maintient un état interne composé de deux vecteurs `V` et `C` de 55 octets (440 bits = `seedlen` pour SHA-256).
 
 L'architecture comprend trois opérations :
+
 1. **Instanciation** (`drbg_instantiate`) : initialisation de l'état à partir d'une entropie et d'un nonce
 2. **Génération** (`drbg_generate`) : production des octets pseudo-aléatoires en itérant SHA-256 sur `V`
 3. **Reseed** (`drbg_reseed`) : mise à jour de l'état avec de l'entropie fraîche
@@ -259,7 +349,8 @@ def _hash_df(input_data, num_bytes):
     num_blocks = (num_bytes + hash_len - 1) // hash_len
     result = b""
     for counter in range(1, num_blocks + 1):
-        to_hash = counter.to_bytes(1, "big") + num_bytes.to_bytes(4, "big") + input_data
+        to_hash = (counter.to_bytes(1, "big")
+                   + num_bytes.to_bytes(4, "big") + input_data)
         result += _sha256(to_hash)
     return result[:num_bytes]
 ```
@@ -276,7 +367,7 @@ def drbg_generate(state, num_bytes):
         int_data = (int.from_bytes(data, "big") + 1) % (2 ** (len(data) * 8))
         data = int_data.to_bytes(len(state["V"]), "big")
     output = W[:num_bytes]
-    # Mise à jour de l'état...
+    # Mise a jour de l'etat...
     return output, state
 ```
 
@@ -337,7 +428,7 @@ sortie[i] = gen1[i] XOR gen2[i] XOR ... XOR genK[i]
 ```python
 def xor_nrbg(generators, seeds, n):
     if len(generators) != len(seeds):
-        raise ValueError("Nombre générateurs != nombre graines")
+        raise ValueError("Nombre generateurs != nombre graines")
     outputs = [gen(seed, n) for gen, seed in zip(generators, seeds)]
     result = []
     for i in range(n):
@@ -361,16 +452,16 @@ Des variantes opèrent sur des bits (`xor_combine_bits`) ou sur des octets (`xor
 
 ## 2. Tests statistiques
 
-Les tests sont implémentés dans `STATISTICS/test_statistique.py` et évaluent la qualité d'une séquence d'octets `[0, 255]`. Chaque test produit un verdict PASS/FAIL selon un seuil calibré à `α = 0.05`.
+Les tests sont implémentés dans `STATISTICS/test_statistique.py` et évaluent la qualité d'une séquence d'octets `[0, 255]`. Chaque test produit un verdict PASS/FAIL selon un seuil calibré à `alpha = 0.05`.
 
 ### 2.1 Entropie de Shannon
 
 #### Principe
 
-L'entropie de Shannon mesure la quantité moyenne d'information contenue dans chaque symbole de la séquence. Pour une source produisant des octets avec la distribution de probabilité `{p_i}_{i=0}^{255}` :
+L'entropie de Shannon mesure la quantité moyenne d'information contenue dans chaque symbole de la séquence. Pour une source produisant des octets avec la distribution de probabilité `{p_i}` :
 
 ```
-H = - sum_{i=0}^{255} p_i * log2(p_i)   (en bits/octet)
+H = - sum p_i * log2(p_i)   (en bits/octet)
 ```
 
 Pour une distribution **parfaitement uniforme** sur 256 valeurs, `p_i = 1/256` et `H = log2(256) = 8 bits/octet` (maximum théorique). Toute déviation par rapport à l'uniformité réduit `H`.
@@ -393,14 +484,14 @@ Le seuil de passage est `H > 7.9 bits/octet` (soit 98.75 % du maximum théorique
 
 #### Application aux générateurs
 
-| Générateur | H (bits/octet) | Verdict |
-|------------|----------------|---------|
-| os.urandom | ~7.97 | PASS |
-| Hash_DRBG | ~7.97 | PASS |
-| MT19937 | ~7.95 | PASS |
-| LCG (glibc) | ~7.94 | PASS |
-| BBS | ~7.90 | PASS |
-| Box-Muller | variable | dépend du générateur amont |
+| Générateur   | H (bits/octet) | Verdict |
+|--------------|----------------|---------|
+| os.urandom   | ~7.97          | PASS    |
+| Hash\_DRBG   | ~7.97          | PASS    |
+| MT19937      | ~7.95          | PASS    |
+| LCG (glibc)  | ~7.94          | PASS    |
+| BBS          | ~7.90          | PASS    |
+| Box-Muller   | variable       | dépend du générateur amont |
 
 Le LCG et le MT19937 obtiennent une entropie satisfaisante : l'entropie de Shannon ne suffit pas à détecter leurs faiblesses structurelles.
 
@@ -415,12 +506,10 @@ Le test du chi-carré évalue l'**uniformité de la distribution** des octets. S
 La statistique du test est :
 
 ```
-χ² = sum_{i=0}^{255} (O_i - E)² / E
+X2 = sum_{i=0}^{255} (O_i - E)^2 / E
 ```
 
-où `O_i` est le nombre d'occurrences observées de la valeur `i`.
-
-Sous `H_0`, `χ²` suit une loi du chi-carré à `df = 255` degrés de liberté. Pour `α = 0.05`, la valeur critique est `χ²_critique = 293.25`.
+où `O_i` est le nombre d'occurrences observées de la valeur `i`. Sous `H_0`, `X2` suit une loi du chi-carré à `df = 255` degrés de liberté. Pour `alpha = 0.05`, la valeur critique est `X2_critique = 293.25`.
 
 #### Implémentation
 
@@ -442,11 +531,9 @@ def chi_squared_test(data, p=0.05):
     }
 ```
 
-Le test passe si `χ² < 293.25`.
-
 #### Application aux générateurs
 
-Un générateur uniforme de qualité doit avoir `χ²` proche de 255 (la valeur attendue de la loi du chi-carré à 255 degrés de liberté). Les CSPRNG (os.urandom, Hash_DRBG) passent systématiquement. Le LCG peut échouer selon les paramètres utilisés.
+Un générateur uniforme de qualité doit avoir `X2` proche de 255 (la valeur attendue). Les CSPRNG (os.urandom, Hash\_DRBG) passent systématiquement. Le LCG peut échouer selon les paramètres utilisés.
 
 ---
 
@@ -460,10 +547,7 @@ Le coefficient pour un décalage `k` est :
 
 ```
 r(k) = Cov(X_i, X_{i+k}) / Var(X)
-     = [ sum_{i=0}^{n-k-1} (X_i - mu)(X_{i+k} - mu) ] / [ sum_{i=0}^{n-1} (X_i - mu)² ]
 ```
-
-où `mu` est la moyenne empirique.
 
 #### Implémentation
 
@@ -474,7 +558,8 @@ def autocorrelation(data, lag=1):
     variance = sum((x - moy)**2 for x in data)
     if variance == 0:
         return 0.0
-    covariance = sum((data[i] - moy) * (data[i + lag] - moy) for i in range(n))
+    covariance = sum((data[i] - moy) * (data[i + lag] - moy)
+                     for i in range(n))
     r = covariance / variance
     return r
 ```
@@ -483,7 +568,7 @@ La fonction `autocorrelation_test` teste plusieurs décalages (`lags = [1, 8, 16
 
 #### Application aux générateurs
 
-Le LCG présente des autocorrélations significatives pour les petits lags, confirmant la corrélation linéaire entre valeurs consécutives. Le MT19937 présente des corrélations détectables sur les octets de poids faible. Les CSPRNG (Hash_DRBG, os.urandom) restent dans les limites acceptables.
+Le LCG présente des autocorrélations significatives pour les petits lags, confirmant la corrélation linéaire entre valeurs consécutives. Le MT19937 présente des corrélations détectables sur les octets de poids faible. Les CSPRNG (Hash\_DRBG, os.urandom) restent dans les limites acceptables.
 
 ---
 
@@ -499,24 +584,14 @@ La statistique du test est la distance maximale entre les deux fonctions :
 D_n = max |F_n(x) - F(x)|
 ```
 
-où :
-- `F_n(x) = (nombre de valeurs ≤ x) / n` (empirique)
-- `F(x) = x / 255` (uniforme théorique sur [0, 255], normalisée dans [0, 1])
+où `F_n(x) = (nombre de valeurs <= x) / n` et `F(x) = x / 255`.
 
 #### Hypothèses
 
-- **H₀** : les données suivent la distribution uniforme
-- **H₁** : les données ne suivent pas la distribution uniforme
+- **H0** : les données suivent la distribution uniforme
+- **H1** : les données ne suivent pas la distribution uniforme
 
-On rejette `H₀` si `D_n > D_critique`.
-
-#### Valeur critique
-
-Pour `α = 0.05` et un échantillon de grande taille `n` :
-
-```
-D_critique = 1.36 / sqrt(n)
-```
+On rejette `H0` si `D_n > D_critique`, avec `D_critique = 1.36 / sqrt(n)` pour `alpha = 0.05`.
 
 #### Implémentation
 
@@ -526,8 +601,8 @@ def kolmogorov_smirnov_test(data):
     n = len(normalized)
     max_diff = 0.0
     for i, value in enumerate(normalized):
-        empi = (i + 1) / n    # F_n(x)
-        theo = value           # F(x) = x/255 (normalisé dans [0,1])
+        empi = (i + 1) / n   # F_n(x)
+        theo = value          # F(x) = x/255 normalise dans [0,1]
         diff = abs(empi - theo)
         max_diff = max(max_diff, diff)
     critical_value = 1.36 / math.sqrt(n)
@@ -560,10 +635,10 @@ Trois méthodes sont implémentées dans `ATTACKS/lcg_seed_recovery.py`.
 C'est la méthode la plus efficace. Sachant que `X_1 = (a * X_0 + c) mod m`, on inverse :
 
 ```
-X_0 = (X_1 - c) * a⁻¹ mod m
+X_0 = (X_1 - c) * a^{-1} mod m
 ```
 
-où `a⁻¹` est l'inverse modulaire de `a` modulo `m`, calculé via `pow(a, -1, m)` (algorithme d'Euclide étendu, complexité `O(log m)`).
+où `a^{-1}` est l'inverse modulaire de `a` modulo `m`, calculé via `pow(a, -1, m)` (algorithme d'Euclide étendu, complexité `O(log m)`).
 
 ```python
 def recover_seed_algebrique(x1, x2, x3, a, c, m):
@@ -587,17 +662,17 @@ def recover_seed_bruteforce(outputs, a, c, m, seed_max=1000000):
     return None
 ```
 
-**Complexité** : `O(seed_max × len(outputs))`. Pour un espace de 100 000 graines et 5 sorties de validation, l'attaque s'exécute en moins d'une seconde.
+**Complexité** : `O(seed_max x len(outputs))`. Pour un espace de 100 000 graines, l'attaque s'exécute en moins d'une seconde.
 
 #### Méthode 3 : Known-plaintext (chiffrement XOR)
 
-Si le LCG est utilisé comme générateur de flux pour un chiffrement XOR (`C = P ⊕ LCG_keystream`) et que l'attaquant connaît un couple `(P, C)`, il récupère directement le keystream :
+Si le LCG est utilisé comme générateur de flux pour un chiffrement XOR (`C = P XOR LCG_keystream`) et que l'attaquant connaît un couple `(P, C)`, il récupère le keystream :
 
 ```
-K = P ⊕ C
+K = P XOR C
 ```
 
-puis recherche la graine par force brute sur les octets du keystream :
+puis recherche la graine par force brute :
 
 ```python
 def recover_seed_from_xor(plaintext, ciphertext, a, c, m, seed_max=100000):
@@ -629,7 +704,7 @@ Chaque sortie du MT est `sortie = temper(state[i])`. Le tempering est une suite 
 
 #### Inversion du tempering
 
-Pour inverser `y ^= (y >> shift)`, on reconstruit les bits de gauche à droite — les `shift` bits de poids fort ne sont pas modifiés, chaque bit suivant se retrouve par XOR avec le bit déjà reconstruit `shift` positions plus haut :
+Pour inverser `y ^= (y >> shift)`, on reconstruit les bits de gauche à droite :
 
 ```python
 def invert_right_shift_xor(y, shift):
@@ -646,7 +721,7 @@ def invert_right_shift_xor(y, shift):
     return result
 ```
 
-Pour inverser `y ^= (y << shift) & mask`, même principe de droite à gauche, en tenant compte du masque :
+Pour inverser `y ^= (y << shift) & mask`, même principe de droite à gauche :
 
 ```python
 def invert_left_shift_xor_mask(y, shift, mask):
@@ -667,10 +742,10 @@ La fonction `untemper` inverse les quatre étapes **dans l'ordre inverse** :
 
 ```python
 def untemper(y):
-    y = invert_right_shift_xor(y, L)          # inverse y ^= y >> L
-    y = invert_left_shift_xor_mask(y, T, C)   # inverse y ^= (y << T) & C
-    y = invert_left_shift_xor_mask(y, S, B)   # inverse y ^= (y << S) & B
-    y = invert_right_shift_xor(y, U)          # inverse y ^= (y >> U) & D
+    y = invert_right_shift_xor(y, L)         # inverse y ^= y >> L
+    y = invert_left_shift_xor_mask(y, T, C)  # inverse y ^= (y << T) & C
+    y = invert_left_shift_xor_mask(y, S, B)  # inverse y ^= (y << S) & B
+    y = invert_right_shift_xor(y, U)         # inverse y ^= (y >> U) & D
     return y
 ```
 
@@ -681,7 +756,7 @@ On applique `untemper` sur chacune des 624 sorties observées :
 ```python
 def recover_state(outputs):
     if len(outputs) < N:
-        raise ValueError(f"Besoin de {N} sorties, reçu {len(outputs)}")
+        raise ValueError(f"Besoin de {N} sorties, recu {len(outputs)}")
     state = []
     for i in range(N):
         state.append(untemper(outputs[i]))
@@ -690,11 +765,10 @@ def recover_state(outputs):
 
 #### Prédiction des sorties futures
 
-L'état reconstruit correspond à l'état interne **avant le prochain twist**. La prédiction s'effectue en appliquant `twist` puis `temper` :
+L'état reconstruit correspond à l'état interne **avant le prochain twist**. La prédiction s'effectue en appliquant `twist` puis `temper`. Le paramètre `index = N` force le twist dès le premier appel :
 
 ```python
 def predict_next(state, index, n):
-    from GENERATORS.PRNG_non_cryptographics.mersenne_twister import twist, temper
     state = state.copy()
     predictions = []
     for _ in range(n):
@@ -707,17 +781,14 @@ def predict_next(state, index, n):
     return predictions
 ```
 
-Pour prédire les sorties suivant immédiatement les 624 observées, il faut appeler `predict_next(state, N, n)` (paramètre `index = N`) afin de forcer le twist dès le premier appel — les 624 sorties observées ont été extraites de l'état courant ; les suivantes proviendront de l'état après twist.
-
 #### Résultats
 
-L'attaque produit une **prédiction parfaite à 100 %** des sorties futures.
+L'attaque produit une **prédiction parfaite à 100 %** des sorties futures après 624 observations.
 
-| Sorties observées | Attaque possible |
-|-------------------|-----------------|
-| < 624 | Non — état incomplet |
-| = 624 | Oui — reconstruction complète |
-| > 624 | Oui — données redondantes |
+| Sorties observées | Attaque possible     |
+|-------------------|----------------------|
+| < 624             | Non — état incomplet |
+| >= 624            | Oui — reconstruction complète |
 
 **Complexité** : `O(624)` inversions de tempering, exécutable en moins d'une milliseconde.
 
@@ -734,10 +805,11 @@ Malgré ses excellentes propriétés statistiques (période `2^19937 - 1`, équi
 | Simulation, modélisation | LCG (paramètres validés), MT19937 | Rapides, bonnes propriétés statistiques |
 | Distribution gaussienne | Box-Muller + os.urandom | Qualité statistique garantie |
 | Cryptographie (général) | `os.urandom` / `secrets` (Python) | Entropie système, résistant aux attaques |
-| Cryptographie (standard) | Hash_DRBG (NIST SP 800-90A) | Certifié, audité, basé sur SHA-256 |
+| Cryptographie (standard) | Hash\_DRBG (NIST SP 800-90A) | Certifié, audité, basé sur SHA-256 |
 | Haute disponibilité | XOR NRBG | Robustesse par redondance des sources |
 
 **Règles fondamentales** :
+
 1. Ne jamais utiliser un PRNG non cryptographique (LCG, MT19937) pour générer des clés, nonces ou IV
 2. Toujours utiliser des nonces/IV uniques et imprévisibles
 3. Préférer `os.urandom` ou le module `secrets` de Python pour tout besoin de sécurité
@@ -749,10 +821,10 @@ Malgré ses excellentes propriétés statistiques (période `2^19937 - 1`, équi
 
 Knuth, D. E. (1997). *The Art of Computer Programming, Volume 2 : Seminumerical Algorithms*. Addison-Wesley.
 
-Matsumoto, M., & Nishimura, T. (1998). Mersenne twister: A 623-dimensionally equidistributed uniform pseudo-random number generator. *ACM Transactions on Modeling and Computer Simulation*, *8*(1), 3–30.
+Matsumoto, M., & Nishimura, T. (1998). Mersenne twister: A 623-dimensionally equidistributed uniform pseudo-random number generator. *ACM Transactions on Modeling and Computer Simulation*, *8*(1), 3--30.
 
-Marsaglia, G. (1968). Random numbers fall mainly in the planes. *Proceedings of the National Academy of Sciences*, *61*(1), 25–28.
+Marsaglia, G. (1968). Random numbers fall mainly in the planes. *Proceedings of the National Academy of Sciences*, *61*(1), 25--28.
 
 National Institute of Standards and Technology. (2015). *NIST SP 800-90A Rev. 1 : Recommendation for random number generation using deterministic random bit generators*. U.S. Department of Commerce.
 
-Kolmogorov, A. N. (1933). Sulla determinazione empirica di una legge di distribuzione. *Giornale dell'Istituto Italiano degli Attuari*, *4*, 83–91.
+Kolmogorov, A. N. (1933). Sulla determinazione empirica di una legge di distribuzione. *Giornale dell'Istituto Italiano degli Attuari*, *4*, 83--91.
