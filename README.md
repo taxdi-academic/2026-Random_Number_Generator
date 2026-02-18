@@ -1,184 +1,234 @@
-# Implémentation des Générateurs de Nombres Aléatoires et Analyse de la Qualité
+# Random Number Generator — Implementation, Testing and Attacks
 
-**Random Number Generators Implementation and Quality Analysis**
+**Implémentation des Générateurs de Nombres Aléatoires, Tests Statistiques et Attaques Pédagogiques**
 
-Engineering school project on the implementation of random number generators and quality analysis.
+Engineering school project on the implementation of pseudorandom number generators, statistical quality evaluation, and pedagogical cryptographic attacks.
+
+> **Important notice**: All attacks implemented in this project are strictly for educational purposes and are prohibited on real systems without explicit authorization.
+
+---
 
 ## Table of Contents
+
 - [Context and Motivation](#context-and-motivation)
 - [Project Objectives](#project-objectives)
 - [Generators Implemented](#generators-implemented)
-- [Testing Methods](#testing-methods)
+- [Statistical Tests](#statistical-tests)
+- [Pedagogical Attacks](#pedagogical-attacks)
 - [Project Structure](#project-structure)
 - [Installation and Usage](#installation-and-usage)
-- [Deliverables](#deliverables)
 - [References](#references)
+
+---
 
 ## Context and Motivation
 
-Randomness and the ability to produce random numbers are at the heart of computer security protocols. Random numbers are used to generate secret keys, nonces, initialization vectors (IVs), and CSRF tokens. Insecure generation would allow an attacker to infer or predict subsequent keys or tokens, thereby compromising the security of the system.
+Randomness is at the heart of computer security protocols. Random numbers are used to generate secret keys, nonces, initialization vectors (IVs), and tokens. If the generation is insecure, an attacker can infer or predict subsequent values, compromising the entire system.
 
-Even if robust theoretical constructions exist, they are sometimes poorly implemented, and when the quality of randomness is insufficient, the entire system becomes vulnerable.
+Even when robust theoretical constructions exist, they are sometimes poorly implemented. This project explores the spectrum from simple non-cryptographic PRNGs to standardized CSPRNGs, and demonstrates why the distinction matters.
+
+---
 
 ## Project Objectives
 
-The goal of this project is to:
-- Implement several pseudorandom number generation (PRNG) methods in Python
-- Evaluate their quality and uniformity
-- Formulate practical recommendations for secure usage
+- Implement several pseudorandom number generation methods in Python (PRNG and CSPRNG)
+- Evaluate their quality using a suite of statistical tests
 - Demonstrate pedagogical attacks exploiting PRNG weaknesses
-- Compare the robustness of studied generators
-
-### Educational Objectives
-- Implement different generators (PRNG and CSPRNG) in Python
-- Implement a suite of statistical tests measuring quality and uniformity
-- Perform pedagogical attack demonstrations exploiting PRNG weaknesses
-- Compare the robustness of studied generators
+- Compare the robustness of the studied generators
 - Produce commented code and a written report
 
-**Important Notice**: All attacks implemented in this project are for educational purposes only and are strictly prohibited on real systems without authorization.
+---
 
 ## Generators Implemented
 
 ### Non-Cryptographic PRNGs
-- **Linear Congruential Generator (LCG)**: Simple and fast pseudorandom generator based on a recursive linear relation. Suffers from weak statistical properties and complete absence of cryptographic security.
-- **Mersenne Twister (MT19937)**: Widely used generator offering excellent statistical properties, but unsuitable for cryptographic uses.
 
-### Gaussian Distribution PRNGs
-- **Box-Muller Transform**: Algorithm transforming two independent uniform random variables into variables following a normal distribution.
+| Generator | File | Description |
+|-----------|------|-------------|
+| Linear Congruential Generator (LCG) | `GENERATORS/PRNG_non_cryptographics/lcg.py` | Simple recurrence `X_{n+1} = (a*X_n + c) mod m`. Fast but linearly predictable. Includes glibc, RANDU and MMIX parameters. |
+| Mersenne Twister (MT19937) | `GENERATORS/PRNG_non_cryptographics/mersenne_twister.py` | Period 2^19937−1, excellent statistical properties. Used by Python's `random` module. State reconstructible from 624 outputs. |
+
+### Gaussian Distribution
+
+| Generator | File | Description |
+|-----------|------|-------------|
+| Box-Muller Transform | `GENERATORS/PRNG_Gaussian_distribution/box_muller.py` | Converts two independent uniform values into two N(0,1) Gaussian values. Requires a uniform PRNG as input. |
 
 ### Cryptographically Secure PRNGs (CSPRNG)
-- **NIST SP 800-90A DRBG (Deterministic Random Bit Generators)**: Family of pseudorandom generators defined by the NIST SP 800-90A standard. These generators are designed for cryptographic applications and offer formal guarantees against prediction and backward security.
-- **Blum-Blum-Shub (BBS)**: Generator based on number theory hypotheses, renowned for its theoretical security. *Modified version using three Blum primes* for thesis research.
-- **System Generator (os.urandom)**: Interface provided by the operating system, relying on hardware and software entropy sources. Commonly used as a cryptographically secure generator in practice.
 
-### Non-Deterministic and Hybrid Generators
-- **XOR NRBG Construction (Non-Random Bit Generator)**: Hybrid generator combining multiple bit generators (or sources) via bit-by-bit XOR operation. This construction aims to improve robustness against partial failure of a randomness source.
+| Generator | File | Description |
+|-----------|------|-------------|
+| Blum-Blum-Shub (BBS) | `GENERATORS/CSPRNG/bbs.py` | Based on quadratic residues modulo M=p×q. Provably secure under the factoring assumption. |
+| Hash_DRBG (NIST SP 800-90A) | `GENERATORS/CSPRNG/hash_drbg.py` | SHA-256-based deterministic random bit generator. Compliant with NIST SP 800-90A. Supports instantiation, generation and reseed. |
+| os.urandom | `GENERATORS/CSPRNG/os_random.py` | System interface to `/dev/urandom` (Linux). Hardware entropy sources. Reference CSPRNG for the project. |
 
-## Testing Methods
+### Non-Deterministic and Hybrid
 
-### Statistical Tests
-- **Shannon Entropy Estimation** per byte
-- **Chi-square (χ²) Test** for byte uniformity
-- **Autocorrelation** (lags 1, 8, ...)
-- **Kolmogorov-Smirnov (KS) Test**
+| Generator | File | Description |
+|-----------|------|-------------|
+| XOR NRBG | `GENERATORS/Non_deterministic_and_hybrid_generators/xor_nrbg.py` | Combines multiple generators via XOR. If at least one source is truly random, the output remains unpredictable. |
 
-### Experiments and Attacks
-At least two of the following pedagogical attacks/experiments:
-- **LCG Seed Recovery**: Known-plaintext/keystream XOR demonstration - seed recovery via linear solving or exhaustive search on small seed spaces
-- **MT19937 State Reconstruction**: Recovery of internal state from 624 32-bit outputs and prediction of future outputs
-- **AES-CTR Nonce Reuse**: Demonstrating XOR message leakage when the same nonce/IV is reused
-- **AES-CBC Predictable IV**: Example showing how a predictable or deterministic IV can lead to information leakage or facilitate message equality detection
+---
+
+## Statistical Tests
+
+All tests are implemented in `STATISTICS/test_statistique.py`. Each test produces a PASS/FAIL verdict at significance level α = 0.05.
+
+| Test | Criterion | What it detects |
+|------|-----------|-----------------|
+| Shannon Entropy | H > 7.9 bits/byte | Lack of diversity in byte values |
+| Chi-squared (χ²) | χ² < 293.25 (df=255) | Non-uniform byte distribution |
+| Autocorrelation | \|r(k)\| < 0.05 for lags 1, 8, 16, 32 | Linear dependence between successive values |
+| Kolmogorov-Smirnov (KS) | D < 1.36/√n | Deviation from uniform CDF |
+
+---
+
+## Pedagogical Attacks
+
+### LCG Seed Recovery — `ATTACKS/lcg_seed_recovery.py`
+
+Three methods demonstrating why LCG must never be used in cryptography:
+
+1. **Algebraic recovery** — recovers seed X₀ from a single output using modular inverse: `X₀ = (X₁ - c) × a⁻¹ mod m`. Complexity: O(log m).
+2. **Brute force** — exhaustive search over small seed spaces (timestamp, PID, counter). Complexity: O(seed_max).
+3. **Known-plaintext** — recovers the LCG keystream from a known (plaintext, ciphertext) pair when LCG is used as an XOR stream cipher.
+
+### MT19937 State Reconstruction — `ATTACKS/mt19937_state_recovery.py`
+
+Demonstrates that MT19937 is fully predictable after observing 624 consecutive 32-bit outputs:
+
+1. **Tempering inversion** — each of the 4 tempering operations is inverted bit-by-bit (`untemper`)
+2. **State recovery** — applying `untemper` to 624 outputs reconstructs the full 624-word internal state
+3. **Future prediction** — applying `twist` then `temper` on the recovered state predicts all subsequent outputs with 100% accuracy
+
+---
 
 ## Project Structure
 
 ```
 Random_Number_Generator/
-├── README.md                 # This file
-├── CSPRNG/                   # Cryptographically Secure PRNGs
-│   ├── BBS.py                # Blum-Blum-Shub implementation
-│   ├── BBS_doc_en.md         # BBS documentation (English)
-│   ├── BBS_doc_fr.md         # BBS documentation (French)
-│   └── DRBG.py               # NIST SP 800-90A DRBG
-├── PRNG_non-cryptographics/  # Non-cryptographic PRNGs
-│   ├── LCG.py                # Linear Congruential Generator
-│   ├── MT19937.py            # MT19937 implementation
-├── PRNG_Gaussin-distribution
-│   └── box-muller.py          # Box-Muller transform
-├── Tests/                    # Statistical tests
-│   ├── entropy.py            # Shannon entropy estimation
-│   ├── chi_square.py         # Chi-square test
-│   ├── autocorrelation.py    # Autocorrelation test
-│   └── kolmogorov_smirnov.py # KS test
-├── Attacks/                  # Pedagogical attacks
-│   ├── lcg_seed_recovery.py  # LCG seed recovery
-│   ├── mt_state_recovery.py  # MT19937 state reconstruction
-│   └── aes_attacks.py        # AES-CTR/CBC attacks
-└── docs/                     # Documentation and reports
-    └── Projet_GNAs_25_26.pdf # Project specifications
+│
+├── GENERATORS/
+│   ├── PRNG_non_cryptographics/
+│   │   ├── lcg.py                   # Linear Congruential Generator
+│   │   └── mersenne_twister.py      # MT19937
+│   ├── PRNG_Gaussian_distribution/
+│   │   └── box_muller.py            # Box-Muller transform
+│   ├── CSPRNG/
+│   │   ├── bbs.py                   # Blum-Blum-Shub
+│   │   ├── hash_drbg.py             # Hash_DRBG (NIST SP 800-90A / SHA-256)
+│   │   └── os_random.py             # os.urandom wrapper
+│   └── Non_deterministic_and_hybrid_generators/
+│       └── xor_nrbg.py              # XOR NRBG
+│
+├── STATISTICS/
+│   └── test_statistique.py          # Shannon, Chi², Autocorrelation, KS
+│
+├── ATTACKS/
+│   ├── lcg_seed_recovery.py         # LCG: algebraic, brute force, known-plaintext
+│   └── mt19937_state_recovery.py    # MT19937: state reconstruction & prediction
+│
+├── RES/                             # Generated figures (visualisations.py output)
+├── screens/                         # Assets (logo)
+│
+├── run_all_tests.py                 # Runs all generators + statistical tests + attacks
+├── visualisations.py                # Generates all plots and saves them to RES/
+│
+├── rapport.md                       # Written report (Markdown)
+├── rapport_pdf.md                   # Pandoc source for PDF rendering
+├── rapport.pdf                      # Compiled PDF report
+└── Projet_GNAs_25_26.pdf            # Project specifications
 ```
+
+---
 
 ## Installation and Usage
 
 ### Requirements
+
 ```bash
-# Python 3.8 or higher required
-pip install numpy scipy matplotlib
+# Python 3.8 or higher
+pip install matplotlib
 ```
 
-### Running a Generator
-```bash
-# Example: Run Blum-Blum-Shub
-python CSPRNG/BBS.py
+No external dependencies beyond the standard library and matplotlib.
 
-# Example: Run LCG
-python PRNG/LCG.py
+### Run All Tests
+
+Verifies all generators, statistical tests and attacks:
+
+```bash
+python run_all_tests.py
 ```
 
-### Running Tests
-```bash
-# Run statistical tests on generated sequences
-python Tests/entropy.py
-python Tests/chi_square.py
+Expected output:
+
+```
+[OK] Tous les générateurs fonctionnent
+[OK] Tous les tests statistiques fonctionnent
+[OK] Toutes les attaques fonctionnent
+[SUCCÈS] Projet complet et fonctionnel
 ```
 
-### Running Pedagogical Attacks
+### Generate Plots
+
+Produces all figures and saves them to `RES/`:
+
+```bash
+python visualisations.py
+```
+
+Figures generated:
+- `plot_distributions.png` — byte frequency distribution per generator
+- `plot_entropie_glissante.png` — sliding Shannon entropy
+- `plot_autocorrelation.png` — autocorrelation coefficients for lags 1–32
+- `plot_ks.png` — empirical CDF vs. uniform theoretical CDF
+- `plot_lcg_attack.png` — LCG attack: predicted vs. real outputs
+- `plot_mt19937_attack.png` — MT19937 attack: reconstruction threshold
+- `plot_comparatif_generateurs.png` — Shannon entropy comparison across all generators
+
+### Run a Specific Generator
+
+```bash
+python GENERATORS/PRNG_non_cryptographics/lcg.py
+python GENERATORS/PRNG_non_cryptographics/mersenne_twister.py
+python GENERATORS/CSPRNG/hash_drbg.py
+python GENERATORS/CSPRNG/bbs.py
+python GENERATORS/CSPRNG/os_random.py
+python GENERATORS/PRNG_Gaussian_distribution/box_muller.py
+python GENERATORS/Non_deterministic_and_hybrid_generators/xor_nrbg.py
+```
+
+### Run Statistical Tests
+
+```bash
+python STATISTICS/test_statistique.py
+```
+
+### Run Pedagogical Attacks
+
 ```bash
 # For educational purposes only
-python Attacks/lcg_seed_recovery.py
-python Attacks/mt_state_recovery.py
+python ATTACKS/lcg_seed_recovery.py
+python ATTACKS/mt19937_state_recovery.py
 ```
-
-## Deliverables
-
-1. **Written Report** including:
-   - Abstract and keywords
-   - Responsibility note stating attacks are pedagogical and prohibited on real systems
-   - Introduction and motivation
-   - Algorithm descriptions and implementations
-   - Statistical testing methodology
-   - Attack protocols and results
-   - Discussion and practical recommendations
-   - Conclusion
-   - Numbered references
-   - Annexes with code listings and figures
-
-2. **Git Repository** containing:
-   - Python code
-   - Jupyter notebooks
-   - Results and figures
-   - Documentation
-
-3. **10-Minute Demonstration**
-
-## Evaluation
-
-- **Implementation, testing, code quality, and demonstration**: 80%
-- **Written report**: 20%
-
-## Project Organization
-
-- **Duration**: 7 sessions
-- **Team Size**: Maximum 3 students per group
-- **Each team member must**:
-  - Understand all parts of the project
-  - Be able to answer questions about all stages and implementations
-- **AI Usage**: Limited use authorized, but all usage must be properly cited
-
-## References
-
-1. Vergnaud, Damien. "L'aléatoire, clé de voûte de la sécurité informatique." *La Recherche*, n°549, juillet-août 2019, pp. 46-49. [Online](https://www.larecherche.fr)
-
-2. Johnston, David. *Random Number Generators—Principles and Practices: A Guide for Engineers and Programmers*. De Gruyter, 2018. ISBN: 978-1501506062. [Online](https://www.degruyterbrill.com/document/doi/10.1515/9781501506062/html)
-
-3. Bureaud, Thierry. "Cybersécurité et qualité des générateurs informatiques de nombres aléatoires." Projet E3, ESIEE Paris, 2019-2020. [Online](https://perso.esiee.fr/~bureaud/Unites/Pr302i/1920/ProjetsE3/e320vr01.pdf)
-
-4. Blum, L., Blum, M., & Shub, M. (1986). "A Simple Unpredictable Pseudo-Random Number Generator." *SIAM Journal on Computing*.
-
-5. NIST Special Publication 800-90A: "Recommendation for Random Number Generation Using Deterministic Random Bit Generators."
 
 ---
 
-**Note**: This project is part of an engineering school curriculum focusing on cryptography and computer security. All implementations are for educational purposes.
+## References
 
-**Date**: January 28, 2026
+1. Knuth, D. E. (1997). *The Art of Computer Programming, Volume 2: Seminumerical Algorithms*. Addison-Wesley.
+
+2. Matsumoto, M., & Nishimura, T. (1998). Mersenne twister: A 623-dimensionally equidistributed uniform pseudo-random number generator. *ACM Transactions on Modeling and Computer Simulation*, 8(1), 3–30.
+
+3. Marsaglia, G. (1968). Random numbers fall mainly in the planes. *Proceedings of the National Academy of Sciences*, 61(1), 25–28.
+
+4. National Institute of Standards and Technology. (2015). *NIST SP 800-90A Rev. 1: Recommendation for random number generation using deterministic random bit generators*. U.S. Department of Commerce.
+
+5. Kolmogorov, A. N. (1933). Sulla determinazione empirica di una legge di distribuzione. *Giornale dell'Istituto Italiano degli Attuari*, 4, 83–91.
+
+6. Blum, L., Blum, M., & Shub, M. (1986). A simple unpredictable pseudo-random number generator. *SIAM Journal on Computing*, 15(2), 364–383.
+
+---
+
+**Project**: Random Number Generator — ENSIBS, ICE 3A, 2025–2026
