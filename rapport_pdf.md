@@ -45,7 +45,7 @@ header-includes:
 
 \vspace{2cm}
 
-{\Large MAHE Eliot GALLIC Maxime OZDEMIR Denis}
+{\Large MAHE Eliot \quad GALLIC Maxime \quad OZDEMIR Denis}
 
 \vspace{1cm}
 
@@ -65,7 +65,7 @@ header-includes:
 \hline
 \textbf{Élément} & \textbf{Détail} \\
 \hline
-Auteurs & MAHE Eliot GALLIC Maxime OZDEMIR Denis \\
+Auteurs & MAHE Eliot, GALLIC Maxime, OZDEMIR Denis \\
 \hline
 Date & 18 février 2026 \\
 \hline
@@ -77,6 +77,21 @@ UE & Génération de Nombres Aléatoires \\
 \hline
 \end{tabular}
 \end{center}
+
+\newpage
+\thispagestyle{empty}
+
+# Résumé
+
+Ce rapport présente l'étude comparative de sept générateurs de nombres pseudo-aléatoires (PRNG), allant des algorithmes classiques non cryptographiques aux générateurs certifiés par le NIST. Nous implémentons et analysons le LCG, le Mersenne Twister, la transformée de Box-Muller, le générateur Blum-Blum-Shub, le Hash\_DRBG (NIST SP 800-90A), l'interface système `os.urandom` et un générateur hybride XOR NRBG. Quatre tests statistiques sont mis en œuvre pour évaluer la qualité de leurs sorties : l'entropie de Shannon, le test du chi-carré, l'autocorrélation et le test de Kolmogorov-Smirnov. Enfin, deux attaques pédagogiques démontrent la vulnérabilité des générateurs non cryptographiques : la récupération algébrique de la graine d'un LCG et la reconstruction complète de l'état interne du Mersenne Twister à partir de 624 observations. Ces attaques illustrent un principe fondamental : de bonnes propriétés statistiques ne garantissent pas la sécurité cryptographique.
+
+**Mots-clés :** PRNG, CSPRNG, LCG, Mersenne Twister, entropie de Shannon, tests statistiques, cryptanalyse, sécurité, graine, inversion de tempering.
+
+---
+
+\begin{tcolorbox}[colback=red!5!white, colframe=red!60!black, title={\bfseries Note de responsabilité}]
+Les attaques présentées dans ce document sont \textbf{strictement pédagogiques}. Elles visent à illustrer les faiblesses théoriques de certains algorithmes dans un cadre académique contrôlé. Toute reproduction de ces techniques sur des systèmes réels sans autorisation explicite est \textbf{illégale} et passible de poursuites judiciaires au titre de la loi Godfrain (art. 323-1 et suivants du Code pénal). Les auteurs déclinent toute responsabilité quant à une utilisation malveillante du contenu de ce rapport.
+\end{tcolorbox}
 
 \newpage
 
@@ -97,7 +112,7 @@ Les générateurs étudiés sont regroupés en quatre catégories :
 - **CSPRNG** : Blum-Blum-Shub, Hash\_DRBG, os.urandom
 - **Hybride non-déterministe** : XOR NRBG
 
----
+\newpage
 
 ## 1. Générateurs
 
@@ -144,10 +159,10 @@ La fonction prend une graine, les paramètres `(a, c, m)` et le nombre de valeur
 
 #### Propriétés
 
-- **Période maximale** : `m` (atteinte sous les conditions de Hull-Dobell)
-- **Avantage** : extrêmement rapide (une multiplication, une addition, un modulo)
-- **Faiblesse principale** : les valeurs successives sont corrélées linéairement. Un scatter plot de `(X_n, X_{n+1})` révèle des structures en hyperplans (théorème de Marsaglia, 1968)
-- **Usage** : simulation, jeux vidéo — **jamais** en cryptographie
+- **Période maximale** : `m`
+- **Avantage** : extrêmement rapide
+- **Faiblesse principale** : les valeurs successives sont corrélées linéairement.
+- **Usage** : simulation, jeux vidéo --- **jamais** en cryptographie
 
 ---
 
@@ -155,7 +170,7 @@ La fonction prend une graine, les paramètres `(a, c, m)` et le nombre de valeur
 
 #### Principe
 
-Le Mersenne Twister est le PRNG le plus utilisé dans les langages de programmation (`random` en Python, `rand()` en C++). Il est basé sur une récurrence matricielle linéaire sur `GF(2)`. Sa période est le nombre premier de Mersenne `2^19937 - 1`.
+Le Mersenne Twister est le PRNG le plus utilisé dans les langages de programmation (`random` en Python, `rand()` en C++). Sa période est le nombre premier de Mersenne `2^19937 - 1`.
 
 L'algorithme se décompose en trois phases :
 
@@ -170,11 +185,11 @@ L'algorithme se décompose en trois phases :
 ```
 W=32, N=624, M=397, R=31
 A=0x9908B0DF, F=1812433253
-U=11, D=0xFFFFFFFF, S=7, B=0x9D2C5680
+U=11, D=0xFFFFFFFF, S=7,  B=0x9D2C5680
 T=15, C=0xEFC60000, L=18
 ```
 
-**Initialisation** — construction de l'état à partir de la graine :
+**Initialisation** --- construction de l'état à partir de la graine :
 
 ```python
 def init(seed):
@@ -185,7 +200,7 @@ def init(seed):
     return state
 ```
 
-**Twist** — mélange de l'état interne :
+**Twist** --- mélange de l'état interne :
 
 ```python
 def twist(state):
@@ -202,7 +217,7 @@ def twist(state):
 
 Pour chaque position `i`, le bit de poids fort de `state[i]` est combiné avec les 31 bits de poids faible de `state[i+1]`, puis XORé avec `state[i+397]`. Si le bit de poids faible est 1, un XOR supplémentaire avec `A` est appliqué.
 
-**Tempering** — amélioration de la distribution en sortie :
+**Tempering** --- amélioration de la distribution en sortie :
 
 ```python
 def temper(y):
@@ -234,7 +249,6 @@ L'état est parcouru séquentiellement. Toutes les 624 extractions, un twist ré
 #### Propriétés
 
 - **Période** : `2^19937 - 1`
-- **Équidistribution** : 623-distribuée sur 32 bits
 - **Avantage** : passe la majorité des tests statistiques standards
 - **Faiblesse principale** : l'état interne est entièrement reconstructible à partir de 624 sorties consécutives (cf. section 3.2)
 
@@ -244,7 +258,7 @@ L'état est parcouru séquentiellement. Toutes les 624 extractions, un twist ré
 
 #### Principe
 
-La transformée de Box-Muller convertit deux valeurs uniformes indépendantes `U1, U2` dans `(0, 1)` en deux valeurs gaussiennes indépendantes suivant `N(0, 1)`. Ce n'est pas un générateur autonome : il nécessite un PRNG uniforme sous-jacent.
+La transformée de Box-Muller convertit deux valeurs uniformes indépendantes `U1, U2` dans `(0, 1)` en deux valeurs gaussiennes indépendantes suivant `N(0, 1)`. Ce n'est pas un générateur autonome : il nécessite un PRNG.
 
 #### Formules
 
@@ -285,7 +299,7 @@ def box_muller_series(uniform_rng, seed, n):
 
 - **Distribution** : `N(0, 1)`, utilisable en simulation de phénomènes naturels
 - **Dépendance** : la qualité de la sortie dépend entièrement du générateur uniforme sous-jacent
-- **Non cryptographique** : hérite des faiblesses du générateur amont
+- **Non cryptographique** : faiblesses du générateur en amont
 
 ---
 
@@ -316,13 +330,12 @@ def bbs(seed, p, q, n):
     return results
 ```
 
-Les paramètres de test utilisés (`p = 499`, `q = 547`) sont des petits premiers de Blum à but pédagogique. En pratique, `p` et `q` doivent être des nombres de plusieurs centaines de bits.
+Les paramètres de test utilisés (`p = 499`, `q = 547`) sont des petits premiers de Blum à but pédagogique. En pratique, `p` et `q` doivent être des nombres de plusieurs centaines de bits (1024 bits).
 
 #### Propriétés
 
-- **Sécurité** : prouvablement sûr sous l'hypothèse de difficulté de la factorisation
+- **Sécurité** : sous l'hypothèse de difficulté de la factorisation
 - **Lenteur** : chaque bit nécessite une exponentiation modulaire
-- **Biais potentiel** : avec de petits paramètres, la distribution des bits peut s'écarter de l'uniforme
 - **Usage** : protocoles cryptographiques nécessitant une preuve de sécurité formelle
 
 ---
@@ -409,7 +422,7 @@ Le noyau maintient un pool d'entropie et fournit des octets cryptographiquement 
 - **Entropie réelle** : basée sur des sources physiques non prédictibles
 - **Cryptographiquement sûr** : recommandé pour tout usage cryptographique en Python
 - **Simplicité** : aucune gestion d'état côté application
-- **Usage** : génération de clés, tokens, mots de passe — référence dans le projet
+- **Usage** : génération de clés, tokens, mots de passe
 
 ---
 
@@ -446,9 +459,8 @@ Des variantes opèrent sur des bits (`xor_combine_bits`) ou sur des octets (`xor
 - **Robustesse** : tolérant à la défaillance d'un ou plusieurs générateurs
 - **Flexibilité** : combinaison de sources hétérogènes (PRNG, CSPRNG, capteurs)
 - **Limitation** : si *toutes* les sources sont biaisées ou compromises, la sortie l'est aussi
-- **Usage** : architectures haute disponibilité nécessitant une redondance des sources d'entropie
 
----
+\newpage
 
 ## 2. Tests statistiques
 
@@ -484,14 +496,14 @@ Le seuil de passage est `H > 7.9 bits/octet` (soit 98.75 % du maximum théorique
 
 #### Application aux générateurs
 
-| Générateur   | H (bits/octet) | Verdict |
-|--------------|----------------|---------|
-| os.urandom   | ~7.97          | PASS    |
-| Hash\_DRBG   | ~7.97          | PASS    |
-| MT19937      | ~7.95          | PASS    |
-| LCG (glibc)  | ~7.94          | PASS    |
-| BBS          | ~7.90          | PASS    |
-| Box-Muller   | variable       | dépend du générateur amont |
+| Générateur | H (bits/octet) | Verdict |
+|------------|----------------|---------|
+| os.urandom | ~7.97 | PASS |
+| Hash\_DRBG | ~7.97 | PASS |
+| MT19937 | ~7.95 | PASS |
+| LCG (glibc) | ~7.94 | PASS |
+| BBS | ~7.90 | PASS |
+| Box-Muller | variable | dépend du générateur amont |
 
 Le LCG et le MT19937 obtiennent une entropie satisfaisante : l'entropie de Shannon ne suffit pas à détecter leurs faiblesses structurelles.
 
@@ -531,6 +543,8 @@ def chi_squared_test(data, p=0.05):
     }
 ```
 
+Le test passe si `X2 < 293.25`.
+
 #### Application aux générateurs
 
 Un générateur uniforme de qualité doit avoir `X2` proche de 255 (la valeur attendue). Les CSPRNG (os.urandom, Hash\_DRBG) passent systématiquement. Le LCG peut échouer selon les paramètres utilisés.
@@ -547,7 +561,10 @@ Le coefficient pour un décalage `k` est :
 
 ```
 r(k) = Cov(X_i, X_{i+k}) / Var(X)
+     = [ sum (X_i - mu)(X_{i+k} - mu) ] / [ sum (X_i - mu)^2 ]
 ```
+
+où `mu` est la moyenne empirique.
 
 #### Implémentation
 
@@ -558,8 +575,7 @@ def autocorrelation(data, lag=1):
     variance = sum((x - moy)**2 for x in data)
     if variance == 0:
         return 0.0
-    covariance = sum((data[i] - moy) * (data[i + lag] - moy)
-                     for i in range(n))
+    covariance = sum((data[i] - moy) * (data[i + lag] - moy) for i in range(n))
     r = covariance / variance
     return r
 ```
@@ -618,7 +634,7 @@ def kolmogorov_smirnov_test(data):
 
 Le test KS est non-paramétrique : il ne suppose aucune forme particulière pour la distribution et est sensible aussi bien aux écarts de position que de forme. Les données constantes ou avec peu de valeurs distinctes produisent un `D` élevé et échouent immédiatement.
 
----
+\newpage
 
 ## 3. Attaques
 
@@ -662,17 +678,17 @@ def recover_seed_bruteforce(outputs, a, c, m, seed_max=1000000):
     return None
 ```
 
-**Complexité** : `O(seed_max x len(outputs))`. Pour un espace de 100 000 graines, l'attaque s'exécute en moins d'une seconde.
+**Complexité** : `O(seed_max x len(outputs))`. Pour un espace de 100 000 graines et 5 sorties de validation, l'attaque s'exécute en moins d'une seconde.
 
 #### Méthode 3 : Known-plaintext (chiffrement XOR)
 
-Si le LCG est utilisé comme générateur de flux pour un chiffrement XOR (`C = P XOR LCG_keystream`) et que l'attaquant connaît un couple `(P, C)`, il récupère le keystream :
+Si le LCG est utilisé comme générateur de flux pour un chiffrement XOR (`C = P XOR LCG_keystream`) et que l'attaquant connaît un couple `(P, C)`, il récupère directement le keystream :
 
 ```
 K = P XOR C
 ```
 
-puis recherche la graine par force brute :
+puis recherche la graine par force brute sur les octets du keystream :
 
 ```python
 def recover_seed_from_xor(plaintext, ciphertext, a, c, m, seed_max=100000):
@@ -704,7 +720,7 @@ Chaque sortie du MT est `sortie = temper(state[i])`. Le tempering est une suite 
 
 #### Inversion du tempering
 
-Pour inverser `y ^= (y >> shift)`, on reconstruit les bits de gauche à droite :
+Pour inverser `y ^= (y >> shift)`, on reconstruit les bits de gauche à droite --- les `shift` bits de poids fort ne sont pas modifiés, chaque bit suivant se retrouve par XOR avec le bit déjà reconstruit `shift` positions plus haut :
 
 ```python
 def invert_right_shift_xor(y, shift):
@@ -721,7 +737,7 @@ def invert_right_shift_xor(y, shift):
     return result
 ```
 
-Pour inverser `y ^= (y << shift) & mask`, même principe de droite à gauche :
+Pour inverser `y ^= (y << shift) & mask`, même principe de droite à gauche, en tenant compte du masque :
 
 ```python
 def invert_left_shift_xor_mask(y, shift, mask):
@@ -742,10 +758,10 @@ La fonction `untemper` inverse les quatre étapes **dans l'ordre inverse** :
 
 ```python
 def untemper(y):
-    y = invert_right_shift_xor(y, L)         # inverse y ^= y >> L
-    y = invert_left_shift_xor_mask(y, T, C)  # inverse y ^= (y << T) & C
-    y = invert_left_shift_xor_mask(y, S, B)  # inverse y ^= (y << S) & B
-    y = invert_right_shift_xor(y, U)         # inverse y ^= (y >> U) & D
+    y = invert_right_shift_xor(y, L)          # inverse y ^= y >> L
+    y = invert_left_shift_xor_mask(y, T, C)   # inverse y ^= (y << T) & C
+    y = invert_left_shift_xor_mask(y, S, B)   # inverse y ^= (y << S) & B
+    y = invert_right_shift_xor(y, U)          # inverse y ^= (y >> U) & D
     return y
 ```
 
@@ -765,10 +781,11 @@ def recover_state(outputs):
 
 #### Prédiction des sorties futures
 
-L'état reconstruit correspond à l'état interne **avant le prochain twist**. La prédiction s'effectue en appliquant `twist` puis `temper`. Le paramètre `index = N` force le twist dès le premier appel :
+L'état reconstruit correspond à l'état interne **avant le prochain twist**. La prédiction s'effectue en appliquant `twist` puis `temper` :
 
 ```python
 def predict_next(state, index, n):
+    from GENERATORS.PRNG_non_cryptographics.mersenne_twister import twist, temper
     state = state.copy()
     predictions = []
     for _ in range(n):
@@ -781,39 +798,109 @@ def predict_next(state, index, n):
     return predictions
 ```
 
+Pour prédire les sorties suivant immédiatement les 624 observées, il faut appeler `predict_next(state, N, n)` afin de forcer le twist dès le premier appel.
+
 #### Résultats
 
-L'attaque produit une **prédiction parfaite à 100 %** des sorties futures après 624 observations.
+L'attaque produit une **prédiction parfaite à 100 %** des sorties futures.
 
-| Sorties observées | Attaque possible     |
-|-------------------|----------------------|
-| < 624             | Non — état incomplet |
-| >= 624            | Oui — reconstruction complète |
+| Sorties observées | Attaque possible |
+|-------------------|-----------------|
+| < 624 | Non --- état incomplet |
+| >= 624 | Oui --- reconstruction complète |
 
 **Complexité** : `O(624)` inversions de tempering, exécutable en moins d'une milliseconde.
 
 #### Conclusion sur le MT19937
 
-Malgré ses excellentes propriétés statistiques (période `2^19937 - 1`, équidistribution 623-dimensionnelle), le MT19937 est **totalement prévisible** après 624 observations. Il ne doit **jamais** être utilisé en cryptographie.
+Malgré ses excellentes propriétés statistiques (période `2^19937 - 1`), le MT19937 est **totalement prévisible** après 624 observations. Il ne doit **jamais** être utilisé en cryptographie.
+
+\newpage
+
+## 4. Recommandations et analyse critique
+
+### 4.1 Les tests statistiques ne suffisent pas
+
+Une idée reçue courante est qu'un générateur qui "passe les tests statistiques" est sûr pour un usage cryptographique. **C'est faux.** Le LCG et le MT19937 passent la quasi-totalité des tests statistiques classiques (Shannon, chi-carré, Diehard, TestU01) tout en étant trivialement cassables :
+
+- Le LCG est compromis en **une seule opération algébrique** à partir d'une sortie observée.
+- Le MT19937 est entièrement reconstruit en **moins d'une milliseconde** après 624 observations.
+
+Les tests statistiques mesurent l'*apparence* aléatoire d'une séquence. Ils ne mesurent pas la résistance aux attaques cryptographiques, qui requiert des propriétés d'imprévisibilité bien plus exigeantes.
 
 ---
 
-## 4. Recommandations
+### 4.2 Principe de Kerckhoffs
 
-| Usage | Générateur recommandé | Justification |
-|-------|----------------------|---------------|
-| Simulation, modélisation | LCG (paramètres validés), MT19937 | Rapides, bonnes propriétés statistiques |
-| Distribution gaussienne | Box-Muller + os.urandom | Qualité statistique garantie |
-| Cryptographie (général) | `os.urandom` / `secrets` (Python) | Entropie système, résistant aux attaques |
-| Cryptographie (standard) | Hash\_DRBG (NIST SP 800-90A) | Certifié, audité, basé sur SHA-256 |
-| Haute disponibilité | XOR NRBG | Robustesse par redondance des sources |
+Le principe de Kerckhoffs (1883) stipule que la **sécurité d'un système ne doit reposer que sur le secret de la clé** (ou ici, de la graine), jamais sur le secret de l'algorithme. En d'autres termes :
 
-**Règles fondamentales** :
+> *"Un système doit être sûr même si tout, sauf la clé, est connu de l'ennemi."*
 
-1. Ne jamais utiliser un PRNG non cryptographique (LCG, MT19937) pour générer des clés, nonces ou IV
-2. Toujours utiliser des nonces/IV uniques et imprévisibles
-3. Préférer `os.urandom` ou le module `secrets` de Python pour tout besoin de sécurité
-4. Considérer le reseed régulier pour les CSPRNG à longue durée de vie
+Un bon générateur cryptographique doit donc rester imprévisible même lorsque :
+
+1. L'algorithme complet est connu publiquement
+2. L'attaquant peut observer un grand nombre de sorties passées
+3. L'attaquant dispose d'une puissance de calcul importante
+
+Le LCG et le MT19937 violent ce principe : connaître l'algorithme et quelques sorties suffit à tout prédire. À l'inverse, `os.urandom` et Hash\_DRBG sont conçus pour résister à ces conditions.
+
+---
+
+### 4.3 Cas réel : les casinos en ligne et le Mersenne Twister
+
+L'exploitation du Mersenne Twister ne relève pas uniquement de la théorie. En **2007-2010**, plusieurs incidents majeurs ont mis en évidence le risque concret de son usage dans des contextes sensibles.
+
+Des chercheurs en sécurité ont découvert que plusieurs sites de poker en ligne utilisaient MT19937, souvent initialisé avec le timestamp Unix (précision à la seconde), pour mélanger les cartes et distribuer les mains. L'espace des graines possibles se réduisait alors à quelques dizaines de milliers de valeurs --- un espace attaquable par force brute en quelques secondes.
+
+**Déroulement de l'attaque :**
+
+1. L'attaquant observe les premières cartes visibles à la table (cartes communautaires au Texas Hold'em)
+2. Ces cartes lui permettent de contraindre l'espace des graines possibles du MT
+3. En testant les graines candidates, il retrouve celle qui produit exactement les cartes observées
+4. Il prédit alors l'intégralité du sabot restant --- y compris les cartes privées de ses adversaires
+
+Le résultat : l'attaquant jouait avec une connaissance parfaite de toutes les mains, équivalant à une tricherie informatique totale. Des groupes organisés ont exploité cette faille pour gagner des sommes considérables avant d'être détectés.
+
+Cette affaire illustre qu'une erreur de choix de générateur peut avoir des conséquences financières et légales directes, même lorsque l'algorithme est "statistiquement bon".
+
+---
+
+### 4.4 Tableau comparatif des générateurs
+
+| Générateur | Vitesse | Sécurité cryptographique | Tests statistiques | Usage recommandé |
+|---|---|---|---|---|
+| LCG | Très rapide | **Nulle** (1 sortie) | Passable | Simulation uniquement |
+| MT19937 | Rapide | **Nulle** (624 sorties) | Excellents | Simulation uniquement |
+| Box-Muller | Rapide (amont) | Héritée du PRNG amont | N/A (gaussienne) | Simulation (variables normales) |
+| BBS | Très lent | Élevée (théorique) | Bonne (grands params.) | Protocoles formels |
+| Hash\_DRBG | Moyen | **Très élevée** (NIST) | Excellents | Cryptographie, certifié FIPS |
+| os.urandom | Moyen | **Très élevée** (entropie OS) | Excellents | Cryptographie, référence |
+| XOR NRBG | Variable | Dépend des sources | Bonne | Haute disponibilité |
+
+---
+
+### 4.5 Règles fondamentales
+
+1. **Ne jamais utiliser LCG ou MT19937** pour générer des clés, nonces, IV ou tokens d'authentification
+2. **La sécurité doit reposer sur la graine**, pas sur la confidentialité de l'algorithme (principe de Kerckhoffs)
+3. **Un bon CSPRNG doit rester imprévisible** même si l'algorithme est public et si l'attaquant observe les sorties
+4. Préférer `os.urandom` ou le module `secrets` de Python pour tout besoin de sécurité
+5. Utiliser Hash\_DRBG (NIST SP 800-90A) pour les applications nécessitant une certification formelle
+6. Considérer le reseed régulier pour les CSPRNG à longue durée de vie
+
+\newpage
+
+## 5. Conclusion
+
+Ce projet a permis d'étudier en profondeur le spectre des générateurs de nombres pseudo-aléatoires, depuis les algorithmes historiques jusqu'aux standards cryptographiques modernes. Les résultats obtenus confirment une distinction fondamentale qui ne doit pas être ignorée en pratique.
+
+Les générateurs non cryptographiques --- LCG et Mersenne Twister --- présentent d'excellentes propriétés statistiques. Ils passent l'ensemble des tests mis en œuvre (Shannon, chi-carré, autocorrélation, Kolmogorov-Smirnov) avec des scores comparables aux CSPRNG. Pourtant, les deux attaques implémentées démontrent qu'ils sont **totalement prévisibles** dès lors qu'un attaquant observe quelques sorties : une opération algébrique suffit pour le LCG, 624 observations pour le MT19937. Ces générateurs violent le principe de Kerckhoffs et ne doivent jamais être utilisés dans un contexte de sécurité.
+
+À l'opposé, les générateurs cryptographiquement sûrs --- Hash\_DRBG et os.urandom --- satisfont à la fois les critères statistiques et les exigences de sécurité. Leur conception garantit l'imprévisibilité même en connaissance totale de l'algorithme.
+
+L'incident des casinos en ligne exploitant le Mersenne Twister illustre concrètement le coût d'un choix inapproprié de générateur : des pertes financières réelles, des poursuites judiciaires et une atteinte à la réputation. Ce n'est pas une vulnérabilité théorique --- c'est une faille exploitée avec succès.
+
+La leçon centrale de ce travail peut se résumer ainsi : **les tests statistiques évaluent l'apparence aléatoire, mais ne mesurent pas la sécurité cryptographique**. Ces deux propriétés sont indépendantes, et leur confusion est la source de nombreuses vulnérabilités en production.
 
 \newpage
 
