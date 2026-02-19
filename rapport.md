@@ -352,7 +352,7 @@ Des variantes opèrent sur des bits (`xor_combine_bits`) ou sur des octets (`xor
 
 - **Robustesse** : tolérant à la défaillance d'un ou plusieurs générateurs
 - **Flexibilité** : combinaison de sources hétérogènes (PRNG, CSPRNG, capteurs)
-- **Limitation** : si *toutes* les sources sont biaisées ou compromises, la sortie l'est aussi.
+- **Limitation** : si *toutes* les sources sont biaisées ou compromises, la sortie l'est aussi
 
 ---
 
