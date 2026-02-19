@@ -67,7 +67,7 @@ La fonction prend une graine, les paramètres `(a, c, m)` et le nombre de valeur
 
 #### Principe
 
-Le Mersenne Twister est le PRNG le plus utilisé dans les langages de programmation (`random` en Python, `rand()` en C++). Il est basé sur une récurrence matricielle linéaire sur `GF(2)`. Sa période est le nombre premier de Mersenne `2^19937 - 1`.
+Le Mersenne Twister est le PRNG le plus utilisé dans les langages de programmation (`random` en Python, `rand()` en C++). Sa période est le nombre premier de Mersenne `2^19937 - 1`.
 
 L'algorithme se décompose en trois phases :
 
@@ -145,7 +145,6 @@ L'état est parcouru séquentiellement. Toutes les 624 extractions, un twist ré
 #### Propriétés
 
 - **Période** : `2^19937 - 1`
-- **Équidistribution** : 623-distribuée sur 32 bits
 - **Avantage** : passe la majorité des tests statistiques standards
 - **Faiblesse principale** : l'état interne est entièrement reconstructible à partir de 624 sorties consécutives (cf. section 3.2)
 
@@ -155,7 +154,7 @@ L'état est parcouru séquentiellement. Toutes les 624 extractions, un twist ré
 
 #### Principe
 
-La transformée de Box-Muller convertit deux valeurs uniformes indépendantes `U1, U2 ∈ (0, 1)` en deux valeurs gaussiennes indépendantes suivant `N(0, 1)`. Ce n'est pas un générateur autonome : il nécessite un PRNG uniforme sous-jacent.
+La transformée de Box-Muller convertit deux valeurs uniformes indépendantes `U1, U2 ∈ (0, 1)` en deux valeurs gaussiennes indépendantes suivant `N(0, 1)`. Ce n'est pas un générateur autonome : il nécessite un PRNG.
 
 #### Formules
 
@@ -196,7 +195,7 @@ def box_muller_series(uniform_rng, seed, n):
 
 - **Distribution** : `N(0, 1)`, utilisable en simulation de phénomènes naturels
 - **Dépendance** : la qualité de la sortie dépend entièrement du générateur uniforme sous-jacent
-- **Non cryptographique** : hérite des faiblesses du générateur amont
+- **Non cryptographique** : faiblesses du générateur en amont
 
 ---
 
@@ -227,13 +226,12 @@ def bbs(seed, p, q, n):
     return results
 ```
 
-Les paramètres de test utilisés (`p = 499`, `q = 547`) sont des petits premiers de Blum à but pédagogique. En pratique, `p` et `q` doivent être des nombres de plusieurs centaines de bits.
+Les paramètres de test utilisés (`p = 499`, `q = 547`) sont des petits premiers de Blum à but pédagogique. En pratique, `p` et `q` doivent être des nombres de plusieurs centaines de bits (1024 bits).
 
 #### Propriétés
 
-- **Sécurité** : prouvablement sûr sous l'hypothèse de difficulté de la factorisation
+- **Sécurité** : sous l'hypothèse de difficulté de la factorisation
 - **Lenteur** : chaque bit nécessite une exponentiation modulaire
-- **Biais potentiel** : avec de petits paramètres, la distribution des bits peut s'écarter de l'uniforme
 - **Usage** : protocoles cryptographiques nécessitant une preuve de sécurité formelle
 
 ---
@@ -318,7 +316,7 @@ Le noyau maintient un pool d'entropie et fournit des octets cryptographiquement 
 - **Entropie réelle** : basée sur des sources physiques non prédictibles
 - **Cryptographiquement sûr** : recommandé pour tout usage cryptographique en Python
 - **Simplicité** : aucune gestion d'état côté application
-- **Usage** : génération de clés, tokens, mots de passe — référence dans le projet
+- **Usage** : génération de clés, tokens, mots de passe
 
 ---
 
@@ -354,8 +352,7 @@ Des variantes opèrent sur des bits (`xor_combine_bits`) ou sur des octets (`xor
 
 - **Robustesse** : tolérant à la défaillance d'un ou plusieurs générateurs
 - **Flexibilité** : combinaison de sources hétérogènes (PRNG, CSPRNG, capteurs)
-- **Limitation** : si *toutes* les sources sont biaisées ou compromises, la sortie l'est aussi
-- **Usage** : architectures haute disponibilité nécessitant une redondance des sources d'entropie
+- **Limitation** : si *toutes* les sources sont biaisées ou compromises, la sortie l'est aussi.
 
 ---
 
