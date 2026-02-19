@@ -54,7 +54,7 @@ PARAMS_GLIBC = {'a': 1103515245, 'c': 12345, 'm': 2**31}
 
 #### Principe
 
-Le Mersenne Twister est basé sur une **récurrence matricielle linéaire sur GF(2)**. C'est le PRNG par défaut de Python (`random`), C++ (`rand()`), R...
+Le Mersenne Twister est basé sur une **récurrence matricielle linéaire**. C'est le PRNG par défaut de Python (`random`), C++ (`rand()`), R...
 
 **Trois phases** :
 1. **Init** — construction d'un état de 624 mots de 32 bits à partir de la graine
@@ -98,14 +98,6 @@ def temper(y):
 | Équidistribution | 623-dimensionnelle sur 32 bits |
 | Avantage | Passe les tests statistiques standards |
 | Faiblesse | État reconstructible en 624 observations (cf. section 3.2) |
-
----
-
-### Distribution des octets — comparaison LCG vs MT19937 vs os.urandom
-
-![Distribution des fréquences d'octets par générateur](RES/plot_distributions.png)
-
-> Un générateur uniforme idéal produit une distribution **plate** sur les 256 valeurs. Le LCG avec de mauvais paramètres (RANDU) présente des pics visibles ; MT19937 et os.urandom sont indiscernables d'une distribution uniforme.
 
 ---
 
