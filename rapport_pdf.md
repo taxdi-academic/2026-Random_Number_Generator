@@ -898,7 +898,7 @@ Les générateurs non cryptographiques --- LCG et Mersenne Twister --- présente
 
 À l'opposé, les générateurs cryptographiquement sûrs --- Hash\_DRBG et os.urandom --- satisfont à la fois les critères statistiques et les exigences de sécurité. Leur conception garantit l'imprévisibilité même en connaissance totale de l'algorithme.
 
-L'incident des casinos en ligne exploitant le Mersenne Twister illustre concrètement le coût d'un choix inapproprié de générateur : des pertes financières réelles, des poursuites judiciaires et une atteinte à la réputation. Ce n'est pas une vulnérabilité théorique --- c'est une faille exploitée avec succès.
+L'incident des casinos en ligne exploitant le Mersenne Twister illustre concrètement le coût d'un choix inapproprié de générateur : des pertes financières réelles, des poursuites judiciaires et une atteinte à la réputation. Ce n'est pas une vulnérabilité théorique --- c'est une faille exploitée avec succès. Par ailleurs, ces types de failles ont également été retrouvées dans des systèmes d'exploitations telsque Android (2013) ou Debian OpenSSL (2008).
 
 La leçon centrale de ce travail peut se résumer ainsi : **les tests statistiques évaluent l'apparence aléatoire, mais ne mesurent pas la sécurité cryptographique**. Ces deux propriétés sont indépendantes, et leur confusion est la source de nombreuses vulnérabilités en production.
 
