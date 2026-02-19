@@ -815,7 +815,7 @@ Malgré ses excellentes propriétés statistiques (période `2^19937 - 1`, équi
 3. Préférer `os.urandom` ou le module `secrets` de Python pour tout besoin de sécurité
 4. Considérer le reseed régulier pour les CSPRNG à longue durée de vie
 
----
+\newpage
 
 ## Bibliographie
 
