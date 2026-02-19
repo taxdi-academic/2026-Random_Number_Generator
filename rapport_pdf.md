@@ -890,7 +890,7 @@ Cette affaire illustre qu'une erreur de choix de générateur peut avoir des con
 
 \newpage
 
-## 5. Conclusion
+## Conclusion
 
 Ce projet a permis d'étudier en profondeur le spectre des générateurs de nombres pseudo-aléatoires, depuis les algorithmes historiques jusqu'aux standards cryptographiques modernes. Les résultats obtenus confirment une distinction fondamentale qui ne doit pas être ignorée en pratique.
 
