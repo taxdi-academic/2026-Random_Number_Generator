@@ -56,10 +56,10 @@ La fonction prend une graine, les paramètres `(a, c, m)` et le nombre de valeur
 
 #### Propriétés
 
-- **Période maximale** : `m` (atteinte sous les conditions de Hull-Dobell)
-- **Avantage** : extrêmement rapide (une multiplication, une addition, un modulo)
-- **Faiblesse principale** : les valeurs successives sont corrélées linéairement. Un scatter plot de `(X_n, X_{n+1})` révèle des structures en hyperplans (théorème de Marsaglia, 1968)
-- **Usage** : simulation, jeux vidéo — **jamais** en cryptographie
+- **Période maximale** : `m` 
+- **Avantage** : extrêmement rapide 
+- **Faiblesse principale** : les valeurs successives sont corrélées linéairement.
+- **Usage** : simulation, jeux vidéo - **jamais** en cryptographie
 
 ---
 
