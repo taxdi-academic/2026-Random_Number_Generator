@@ -304,7 +304,7 @@ def plot_mt19937_attack():
     future_real = all_outputs[MT_N:MT_N + n_pred]
 
     recovered_state = recover_state(observed)
-    predicted       = predict_next(recovered_state, 0, n_pred)
+    predicted = predict_next(recovered_state, MT_N, n_pred)
 
     indices = list(range(n_pred))
     match   = sum(1 for r, p in zip(future_real, predicted) if r == p)
