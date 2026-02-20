@@ -1,6 +1,6 @@
 # Oral — Générateurs de Nombres Pseudo-Aléatoires
 
-**MAHE Eliot, GALLIC Maxime, OZDEMIR Denis — ICE 3A — 2025/2026**
+**MAHE Eliot, GALLIC Maxime, O.Denis — ICE 3A — 2025/2026**
 
 ---
 
