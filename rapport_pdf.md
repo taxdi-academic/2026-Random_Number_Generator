@@ -17,7 +17,7 @@ header-includes:
   - \usepackage{tcolorbox}
   - \pagestyle{fancy}
   - \fancyhf{}
-  - \fancyhead[L]{MAHE Eliot, GALLIC Maxime, OZDEMIR Denis -- ICE 3A}
+  - \fancyhead[L]{MAHE Eliot, GALLIC Maxime, O.Denis -- ICE 3A}
   - \fancyhead[R]{\thepage}
   - \renewcommand{\headrulewidth}{0.4pt}
   - \fancypagestyle{plain}{\pagestyle{fancy}}
@@ -45,7 +45,7 @@ header-includes:
 
 \vspace{2cm}
 
-{\Large MAHE Eliot \quad GALLIC Maxime \quad OZDEMIR Denis}
+{\Large MAHE Eliot \quad GALLIC Maxime \quad O.Denis}
 
 \vspace{1cm}
 
@@ -65,7 +65,7 @@ header-includes:
 \hline
 \textbf{Élément} & \textbf{Détail} \\
 \hline
-Auteurs & MAHE Eliot, GALLIC Maxime, OZDEMIR Denis \\
+Auteurs & MAHE Eliot, GALLIC Maxime, O.Denis \\
 \hline
 Date & 18 février 2026 \\
 \hline
