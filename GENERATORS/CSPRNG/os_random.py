@@ -1,34 +1,33 @@
 """
-Générateur système (os.urandom)
+System generator (os.urandom)
 
-Interface fournie par le système d'exploitation, s'appuyant sur
-des sources d'entropie matérielles et logicielles (/dev/urandom
-sous Linux, CryptGenRandom sous Windows).
+Interface provided by the operating system, relying on hardware and
+software entropy sources (/dev/urandom on Linux, CryptGenRandom on Windows).
 
-Couramment utilisé comme générateur cryptographiquement sûr en pratique.
+Commonly used as the reference cryptographically secure generator in practice.
 """
 
 import os
 
 
 def os_generate_bytes(n):
-    """Génère n octets véritablement aléatoires via le système."""
+    """Generates n truly random bytes via the OS."""
     return os.urandom(n)
 
 
 def os_next_int32():
-    """Retourne un entier aléatoire de 32 bits."""
+    """Returns a random 32-bit integer."""
     return int.from_bytes(os.urandom(4), "big")
 
 
 def os_next_float():
-    """Retourne un flottant aléatoire dans [0, 1)."""
+    """Returns a random float in [0, 1)."""
     return os_next_int32() / (2**32)
 
 
 if __name__ == "__main__":
-    print("os.urandom - 10 nombres 32-bit :")
+    print("os.urandom - 10 random 32-bit numbers:")
     for _ in range(10):
         print(f"  {os_next_int32()}")
     data = os_generate_bytes(16)
-    print(f"\n16 octets : {data.hex()}")
+    print(f"\n16 bytes: {data.hex()}")

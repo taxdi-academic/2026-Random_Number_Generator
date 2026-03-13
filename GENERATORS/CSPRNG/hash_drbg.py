@@ -1,19 +1,19 @@
 """
 NIST SP 800-90A Hash_DRBG (SHA-256)
 
-Implémentation simplifiée du Deterministic Random Bit Generator
-basé sur SHA-256, conforme au standard NIST SP 800-90A.
+Simplified implementation of the Deterministic Random Bit Generator
+based on SHA-256, compliant with NIST SP 800-90A standard.
 
-L'état est représenté par un dict {"V": bytes, "C": bytes, "reseed_counter": int}.
+State is represented as a dict {"V": bytes, "C": bytes, "reseed_counter": int}.
 
-Ce CSPRNG offre des garanties contre la prédiction des sorties
-futures et supporte le reseed pour rafraîchir l'entropie.
+This CSPRNG provides guarantees against prediction of future outputs
+and supports reseeding to refresh entropy.
 """
 
 import hashlib
 import os
 
-SEED_LEN = 55  # seedlen pour SHA-256 = 440 bits = 55 octets
+SEED_LEN = 55  # seedlen for SHA-256 = 440 bits = 55 bytes
 
 
 def _sha256(data):
@@ -23,8 +23,8 @@ def _sha256(data):
 
 def _hash_df(input_data, num_bytes):
     """
-    Hash derivation function (Hash_df) selon NIST SP 800-90A.
-    Dérive num_bytes octets à partir des données d'entrée.
+    Hash derivation function (Hash_df) per NIST SP 800-90A.
+    Derives num_bytes bytes from the input data.
     """
     hash_len = 32
     num_blocks = (num_bytes + hash_len - 1) // hash_len
@@ -37,12 +37,12 @@ def _hash_df(input_data, num_bytes):
 
 def drbg_instantiate(entropy=None, nonce=None, personalization=b""):
     """
-    Instancie le DRBG.
+    Instantiates the DRBG.
 
     Args:
-        entropy          : entropie initiale (bytes). Si None, os.urandom.
-        nonce            : nonce (bytes). Si None, os.urandom.
-        personalization  : chaîne de personnalisation optionnelle
+        entropy         : initial entropy (bytes). If None, uses os.urandom.
+        nonce           : nonce (bytes). If None, uses os.urandom.
+        personalization : optional personalisation string
 
     Returns:
         state : dict {"V", "C", "reseed_counter"}
@@ -62,14 +62,14 @@ def drbg_instantiate(entropy=None, nonce=None, personalization=b""):
 
 def drbg_reseed(state, entropy=None):
     """
-    Reseed le DRBG avec de la nouvelle entropie.
+    Reseeds the DRBG with new entropy.
 
     Args:
-        state   : état courant
-        entropy : nouvelle entropie (bytes). Si None, os.urandom.
+        state   : current state
+        entropy : new entropy (bytes). If None, uses os.urandom.
 
     Returns:
-        state mis à jour
+        updated state
     """
     if entropy is None:
         entropy = os.urandom(SEED_LEN)
@@ -83,11 +83,11 @@ def drbg_reseed(state, entropy=None):
 
 def drbg_generate(state, num_bytes):
     """
-    Génère num_bytes octets pseudo-aléatoires.
+    Generates num_bytes pseudorandom bytes.
 
     Args:
-        state     : état courant
-        num_bytes : nombre d'octets à générer
+        state     : current state
+        num_bytes : number of bytes to generate
 
     Returns:
         (output_bytes, state)
@@ -102,7 +102,7 @@ def drbg_generate(state, num_bytes):
         data = int_data.to_bytes(len(state["V"]), "big")
     output = W[:num_bytes]
 
-    # Mise à jour de l'état
+    # State update
     H = _sha256(b"\x03" + state["V"])
     int_v = int.from_bytes(state["V"], "big")
     int_h = int.from_bytes(H, "big")
@@ -117,10 +117,10 @@ def drbg_generate(state, num_bytes):
 
 def drbg_generate_bytes(n, entropy=None, nonce=None):
     """
-    Fonction raccourci : instancie le DRBG et génère n octets.
+    Shortcut function: instantiates the DRBG and generates n bytes.
 
     Returns:
-        bytes de longueur n
+        bytes of length n
     """
     state = drbg_instantiate(entropy=entropy, nonce=nonce)
     output, _ = drbg_generate(state, n)
@@ -129,10 +129,10 @@ def drbg_generate_bytes(n, entropy=None, nonce=None):
 
 if __name__ == "__main__":
     state = drbg_instantiate(entropy=b"A" * 55, nonce=b"B" * 28)
-    print("Hash_DRBG (SHA-256) - 32 octets :")
+    print("Hash_DRBG (SHA-256) - 32 bytes:")
     data, state = drbg_generate(state, 32)
     print(f"  {data.hex()}")
-    print(f"\nAprès reseed - 32 octets :")
+    print(f"\nAfter reseed - 32 bytes:")
     state = drbg_reseed(state, b"C" * 55)
     data, state = drbg_generate(state, 32)
     print(f"  {data.hex()}")

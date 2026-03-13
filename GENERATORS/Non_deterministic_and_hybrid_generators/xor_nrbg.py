@@ -1,22 +1,22 @@
 # generators/xor_nrbg.py
 
 """
-Construction XOR NRBG (Non-deterministic Random Bit Generator)
-Combine plusieurs sources d'entropie via XOR pour robustesse
-https://fr.wikipedia.org/wiki/Fonction_OU_exclusif
+XOR NRBG (Non-deterministic Random Bit Generator) construction
+Combines multiple entropy sources via XOR for robustness
+https://en.wikipedia.org/wiki/Exclusive_or
 """
 
 def xor_combine_bits(sources):
     """
-    Combine sources de bits via XOR bit-à-bit
-    Principe: Si ≥1 source aléatoire et indépendante,
-        sortie reste aléatoire (robustesse défaillance)
-    Paramètres:
+    Combines bit sources via bitwise XOR
+    Principle: if at least 1 source is random and independent,
+        the output remains random (fault tolerance)
+    Parameters:
         sources: [[1,0,1], [0,1,1], [1,1,0]]
     """
     if not sources:
         return []
-    
+
     n = len(sources[0])
     result = []
     for i in range(n):
@@ -28,13 +28,13 @@ def xor_combine_bits(sources):
 
 def xor_combine_bytes(sources):
     """
-    Combine sources d'octets via XOR octet-par-octet
-    Paramètres:
-        sources: liste de bytes (même longueur)
+    Combines byte sources via byte-wise XOR
+    Parameters:
+        sources: list of bytes (same length)
     """
     if not sources:
         return b''
-    
+
     n = len(sources[0])
     result = bytearray(n)
     for i in range(n):
@@ -46,19 +46,19 @@ def xor_combine_bytes(sources):
 
 def xor_nrbg(generators, seeds, n):
     """
-    Générateur hybride combinant plusieurs PRNGs via XOR
-    Avantage: Si un générateur compromis, sortie reste imprévisible
-        si autres générateurs sains
-    Paramètres:
-        generators: [gen1, gen2, ...] avec signature gen(seed, n)
+    Hybrid generator combining multiple PRNGs via XOR
+    Advantage: if one generator is compromised, the output remains
+        unpredictable as long as the other generators are healthy
+    Parameters:
+        generators: [gen1, gen2, ...] with signature gen(seed, n)
         seeds: [seed1, seed2, ...]
-        n: nombre de valeurs
+        n: number of values to generate
     """
     if len(generators) != len(seeds):
-        raise ValueError("Nombre générateurs != nombre graines")
-    
+        raise ValueError("Number of generators != number of seeds")
+
     outputs = [gen(seed, n) for gen, seed in zip(generators, seeds)]
-    
+
     result = []
     for i in range(n):
         xor_val = 0
@@ -73,13 +73,13 @@ if __name__ == "__main__":
     src_bits = [[1, 0, 1, 1], [0, 1, 1, 0], [1, 1, 0, 1]]
     print(f"Sources: {src_bits}")
     print(f"XOR: {xor_combine_bits(src_bits)}")
-    
+
     print("\nXOR bytes")
     src_bytes = [b'\xAA\xBB', b'\x55\x44', b'\xFF\x00']
     print(f"Sources: {[s.hex() for s in src_bytes]}")
     print(f"XOR: {xor_combine_bytes(src_bytes).hex()}")
-    
-    print("\nXOR générateurs")
+
+    print("\nXOR generators")
     gen1 = lambda seed, n: [(seed + i) % 256 for i in range(n)]
     gen2 = lambda seed, n: [(seed * 2 + i) % 256 for i in range(n)]
     result = xor_nrbg([gen1, gen2], [42, 17], 5)

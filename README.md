@@ -1,7 +1,5 @@
 # Random Number Generator — Implementation, Testing and Attacks
 
-**Implémentation des Générateurs de Nombres Aléatoires, Tests Statistiques et Attaques Pédagogiques**
-
 Engineering school project on the implementation of pseudorandom number generators, statistical quality evaluation, and pedagogical cryptographic attacks.
 
 > **Important notice**: All attacks implemented in this project are strictly for educational purposes and are prohibited on real systems without explicit authorization.
@@ -134,9 +132,6 @@ Random_Number_Generator/
 ├── run_all_tests.py                 # Runs all generators + statistical tests + attacks
 ├── visualisations.py                # Generates all plots and saves them to RES/
 │
-├── rapport.md                       # Written report (Markdown)
-├── rapport_pdf.md                   # Pandoc source for PDF rendering
-├── rapport.pdf                      # Compiled PDF report
 └── Projet_GNAs_25_26.pdf            # Project specifications
 ```
 
@@ -164,10 +159,10 @@ python run_all_tests.py
 Expected output:
 
 ```
-[OK] Tous les générateurs fonctionnent
-[OK] Tous les tests statistiques fonctionnent
-[OK] Toutes les attaques fonctionnent
-[SUCCÈS] Projet complet et fonctionnel
+[OK] All generators working
+[OK] All statistical tests working
+[OK] All attacks working
+[SUCCESS] Project complete and functional
 ```
 
 ### Generate Plots
@@ -230,5 +225,3 @@ python ATTACKS/mt19937_state_recovery.py
 6. Blum, L., Blum, M., & Shub, M. (1986). A simple unpredictable pseudo-random number generator. *SIAM Journal on Computing*, 15(2), 364–383.
 
 ---
-
-**Project**: Random Number Generator — ENSIBS, ICE 3A, 2025–2026

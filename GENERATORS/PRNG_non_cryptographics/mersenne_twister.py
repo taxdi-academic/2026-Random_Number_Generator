@@ -1,8 +1,8 @@
 """
 Mersenne Twister MT19937
-PRNG de periode 2^19937 - 1
-Non cryptographiquement securise
-https://fr.wikipedia.org/wiki/Mersenne_Twister
+PRNG with period 2^19937 - 1
+Not cryptographically secure
+https://en.wikipedia.org/wiki/Mersenne_Twister
 """
 
 W, N, M, R = 32, 624, 397, 31
@@ -14,7 +14,7 @@ T, C = 15, 0xEFC60000
 L = 18
 
 def init(seed):
-    """Initialise l'etat interne"""
+    """Initialises the internal state"""
     state = [seed & 0xFFFFFFFF]
     for i in range(1, N):
         prev = state[i - 1]
@@ -22,20 +22,20 @@ def init(seed):
     return state
 
 def twist(state):
-    """Transformation twist"""
+    """Twist transformation"""
     for i in range(N):
-        # Extraire bit 31 de state[i] et bits 0-30 de state[i+1]
-        bit_haut = state[i] & 0x80000000
-        bits_bas = state[(i + 1) % N] & 0x7FFFFFFF
-        x = bit_haut | bits_bas
+        # Extract bit 31 from state[i] and bits 0-30 from state[i+1]
+        upper_bit = state[i] & 0x80000000
+        lower_bits = state[(i + 1) % N] & 0x7FFFFFFF
+        x = upper_bit | lower_bits
         x_shifted = x >> 1
-        if x & 1:  # Bit de poids faible = 1
+        if x & 1:  # Least significant bit = 1
             x_shifted ^= A
         state[i] = state[(i + M) % N] ^ x_shifted
     return state
 
 def temper(y):
-    """Tempering pour ameliorer distribution"""
+    """Tempering to improve distribution"""
     y ^= (y >> U) & D
     y ^= (y << S) & B
     y ^= (y << T) & C
@@ -43,7 +43,7 @@ def temper(y):
     return y & 0xFFFFFFFF
 
 def generate(seed, n):
-    """Genere n nombres 32-bits"""
+    """Generates n 32-bit numbers"""
     state = init(seed)
     index = N
     results = []
